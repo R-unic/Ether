@@ -1,3 +1,11 @@
 #Folders
 
 node_modules
+
+#Self
+
+.gitignore
+
+#TS
+
+.tsbuildinfo
