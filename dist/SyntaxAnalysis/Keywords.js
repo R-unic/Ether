@@ -1,19 +1,19 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Keywords = void 0;
-const TokenType_1 = require("./Enumerations/TokenType");
+const SyntaxType_1 = require("./Enumerations/SyntaxType");
 exports.Keywords = new Map(Object.entries({
-    "else": TokenType_1.SyntaxType.ELSE,
-    "false": TokenType_1.SyntaxType.FALSE,
-    "for": TokenType_1.SyntaxType.FOR,
-    "method": TokenType_1.SyntaxType.METHOD,
-    "if": TokenType_1.SyntaxType.IF,
-    "let": TokenType_1.SyntaxType.LET,
-    "null": TokenType_1.SyntaxType.NULL,
-    "print": TokenType_1.SyntaxType.PRINT,
-    "return": TokenType_1.SyntaxType.RETURN,
-    "super": TokenType_1.SyntaxType.SUPER,
-    "this": TokenType_1.SyntaxType.THIS,
-    "true": TokenType_1.SyntaxType.TRUE,
-    "while": TokenType_1.SyntaxType.WHILE,
+    "else": SyntaxType_1.SyntaxType.ELSE,
+    "false": SyntaxType_1.SyntaxType.FALSE,
+    "for": SyntaxType_1.SyntaxType.FOR,
+    "method": SyntaxType_1.SyntaxType.METHOD,
+    "if": SyntaxType_1.SyntaxType.IF,
+    "let": SyntaxType_1.SyntaxType.LET,
+    "null": SyntaxType_1.SyntaxType.NULL,
+    "print": SyntaxType_1.SyntaxType.PRINT,
+    "return": SyntaxType_1.SyntaxType.RETURN,
+    "super": SyntaxType_1.SyntaxType.SUPER,
+    "this": SyntaxType_1.SyntaxType.THIS,
+    "true": SyntaxType_1.SyntaxType.TRUE,
+    "while": SyntaxType_1.SyntaxType.WHILE,
 }));

@@ -4,7 +4,10 @@ import { exit } from "process";
 import { Lexer } from "./SyntaxAnalysis/Lexer";
 import { Token } from "./SyntaxAnalysis/Token";
 import { Input } from "./Util";
-import * as repl from "repl";
+import { SyntaxType } from "./SyntaxAnalysis/Enumerations/SyntaxType";
+import { Parser } from "./SyntaxAnalysis/Parser";
+import { Expr } from "./SyntaxAnalysis/Expression";
+import { ASTPrinter } from "./Utility/ASTPrinter";
 
 export class Ether {
     private static hadError = false;
@@ -19,13 +22,19 @@ export class Ether {
             this.RunPrompt();
     }
 
-    public static Report(line: number, where: string, message: string) {
+    public static Report(line: number, where: string, message: string): void {
         error(`[line ${line}] Error${where}: ${message}`);
         this.hadError = true;
     }
 
-    public static Error(line: number, message: string) {
-        this.Report(line, "", message);
+    public static Error(tokenOrLine: Token | number, message: string): void {
+        if (typeof tokenOrLine === "number")
+            this.Report(tokenOrLine, "", message);
+        else
+            if (tokenOrLine.Type === SyntaxType.EOF)
+                this.Report(tokenOrLine.Line, " at end", message);
+            else
+                this.Report(tokenOrLine.Line, ` at '${tokenOrLine.Lexeme}'`, message);
     }
 
     public static RunPrompt(): void {
@@ -51,7 +60,13 @@ export class Ether {
         const lexer = new Lexer(sourceCode);
         const tokens: Token[] = lexer.ScanTokens();
 
-        for (const token of tokens)
-            log(token.ToString());
+        const parser = new Parser(tokens);
+        const expr: Expr.Base | undefined = parser.Parse();
+
+        if (this.hadError)
+            return;
+
+        const printer = new ASTPrinter;
+        printer.Print(expr);
     }
 }

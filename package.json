@@ -2,14 +2,19 @@
   "name": "ether",
   "version": "1.0.0",
   "description": "An interpreter",
-  "main": "tsc && dist/Main.js",
+  "main": "dist/Main.js",
   "scripts": {
     "start": "node dist/Main.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tsc && mocha"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AlphaRunic/Ether.git"
+  },
+  "mocha": {
+    "file": [
+      "dist/Testing/Lexer/Lexer_LexesTokens.js"
+    ]
   },
   "keywords": [
     "interpreter",
@@ -23,10 +28,14 @@
   },
   "homepage": "https://github.com/AlphaRunic/Ether#readme",
   "dependencies": {
+    "chai": "^4.3.4",
+    "mocha": "^9.0.0",
     "readline": "^1.3.0",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
+    "@types/chai": "^4.2.18",
+    "@types/mocha": "^8.2.2",
     "@types/node": "^15.12.2"
   }
 }

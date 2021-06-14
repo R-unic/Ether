@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Lexer = void 0;
 const Ether_1 = require("../Ether");
-const TokenType_1 = require("./Enumerations/TokenType");
+const SyntaxType_1 = require("./Enumerations/SyntaxType");
 const Keywords_1 = require("./Keywords");
 const Token_1 = require("./Token");
 class Lexer {
@@ -21,60 +21,69 @@ class Lexer {
             this.start = this.current;
             this.ScanToken();
         }
-        this.tokens.push(new Token_1.Token(TokenType_1.SyntaxType.EOF, "", null, this.line));
+        this.tokens.push(new Token_1.Token(SyntaxType_1.SyntaxType.EOF, "", null, this.line));
         return this.tokens;
     }
     ScanToken() {
         const c = this.Advance();
         switch (c) {
             case "(":
-                this.AddToken(TokenType_1.SyntaxType.LEFT_PAREN);
+                this.AddToken(SyntaxType_1.SyntaxType.LEFT_PAREN);
                 break;
             case ")":
-                this.AddToken(TokenType_1.SyntaxType.RIGHT_PAREN);
+                this.AddToken(SyntaxType_1.SyntaxType.RIGHT_PAREN);
                 break;
             case "{":
-                this.AddToken(TokenType_1.SyntaxType.LEFT_BRACE);
+                this.AddToken(SyntaxType_1.SyntaxType.LEFT_BRACE);
                 break;
             case "}":
-                this.AddToken(TokenType_1.SyntaxType.RIGHT_BRACE);
+                this.AddToken(SyntaxType_1.SyntaxType.RIGHT_BRACE);
                 break;
             case ",":
-                this.AddToken(TokenType_1.SyntaxType.COMMA);
+                this.AddToken(SyntaxType_1.SyntaxType.COMMA);
                 break;
             case ".":
-                this.AddToken(TokenType_1.SyntaxType.DOT);
+                this.AddToken(SyntaxType_1.SyntaxType.DOT);
                 break;
             case "-":
-                this.AddToken(TokenType_1.SyntaxType.MINUS);
+                this.AddToken(SyntaxType_1.SyntaxType.MINUS);
                 break;
             case "+":
-                this.AddToken(TokenType_1.SyntaxType.PLUS);
+                this.AddToken(SyntaxType_1.SyntaxType.PLUS);
                 break;
             case ";":
-                this.AddToken(TokenType_1.SyntaxType.SEMICOLON);
+                this.AddToken(SyntaxType_1.SyntaxType.SEMICOLON);
                 break;
             case "*":
-                this.AddToken(TokenType_1.SyntaxType.STAR);
-                break;
-            case '!':
-                this.AddToken(this.Match('=') ? TokenType_1.SyntaxType.BANG_EQUAL : TokenType_1.SyntaxType.BANG);
-                break;
-            case '=':
-                this.AddToken(this.Match('=') ? TokenType_1.SyntaxType.EQUAL_EQUAL : TokenType_1.SyntaxType.EQUAL);
-                break;
-            case '<':
-                this.AddToken(this.Match('=') ? TokenType_1.SyntaxType.LESS_EQUAL : TokenType_1.SyntaxType.LESS);
-                break;
-            case '>':
-                this.AddToken(this.Match('=') ? TokenType_1.SyntaxType.GREATER_EQUAL : TokenType_1.SyntaxType.GREATER);
+                this.AddToken(SyntaxType_1.SyntaxType.STAR);
                 break;
             case '/':
-                if (this.Match('/'))
+                this.AddToken(SyntaxType_1.SyntaxType.SLASH);
+                break;
+            case "^":
+                this.AddToken(SyntaxType_1.SyntaxType.CARAT);
+                break;
+            case "%":
+                this.AddToken(SyntaxType_1.SyntaxType.PERCENT);
+                break;
+            case "#":
+                if (this.Match("#"))
                     while (this.Peek() !== '\n' && !this.Completed)
                         this.Advance();
                 else
-                    this.AddToken(TokenType_1.SyntaxType.SLASH);
+                    this.AddToken(SyntaxType_1.SyntaxType.HASHTAG);
+                break;
+            case '!':
+                this.AddToken(this.Match('=') ? SyntaxType_1.SyntaxType.BANG_EQUAL : SyntaxType_1.SyntaxType.BANG);
+                break;
+            case '=':
+                this.AddToken(this.Match('=') ? SyntaxType_1.SyntaxType.EQUAL_EQUAL : SyntaxType_1.SyntaxType.EQUAL);
+                break;
+            case '<':
+                this.AddToken(this.Match('=') ? SyntaxType_1.SyntaxType.LESS_EQUAL : SyntaxType_1.SyntaxType.LESS);
+                break;
+            case '>':
+                this.AddToken(this.Match('=') ? SyntaxType_1.SyntaxType.GREATER_EQUAL : SyntaxType_1.SyntaxType.GREATER);
                 break;
             case ' ':
             case '\r':
@@ -87,10 +96,10 @@ class Lexer {
                 this.String();
                 break;
             case "|":
-                this.AddToken(TokenType_1.SyntaxType.OR);
+                this.AddToken(SyntaxType_1.SyntaxType.OR);
                 break;
             case "&":
-                this.AddToken(TokenType_1.SyntaxType.AND);
+                this.AddToken(SyntaxType_1.SyntaxType.AND);
                 break;
             default:
                 if (this.IsDigit(c))
@@ -140,7 +149,7 @@ class Lexer {
         while (this.IsAlphaNumeric(this.Peek()))
             this.Advance();
         const text = this.source.substring(this.start, this.current);
-        let type = (_a = Keywords_1.Keywords.get(text)) !== null && _a !== void 0 ? _a : TokenType_1.SyntaxType.IDENTIFIER;
+        let type = (_a = Keywords_1.Keywords.get(text)) !== null && _a !== void 0 ? _a : SyntaxType_1.SyntaxType.IDENTIFIER;
         this.AddToken(type);
     }
     String() {
@@ -155,7 +164,7 @@ class Lexer {
         }
         this.Advance();
         const value = this.source.substring(this.start + 1, this.current - 1);
-        this.AddToken(TokenType_1.SyntaxType.STRING, value);
+        this.AddToken(SyntaxType_1.SyntaxType.STRING, value);
     }
     Number() {
         while (this.IsDigit(this.Peek()))
@@ -165,7 +174,7 @@ class Lexer {
             while (this.IsDigit(this.Peek()))
                 this.Advance();
         }
-        this.AddToken(TokenType_1.SyntaxType.NUMBER, parseFloat(this.source.substring(this.start, this.current)));
+        this.AddToken(SyntaxType_1.SyntaxType.NUMBER, parseFloat(this.source.substring(this.start, this.current)));
     }
 }
 exports.Lexer = Lexer;

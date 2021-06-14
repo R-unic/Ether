@@ -1,5 +1,5 @@
 import { Ether } from "../Ether";
-import { SyntaxType } from "./Enumerations/TokenType";
+import { SyntaxType } from "./Enumerations/SyntaxType";
 import { Keywords } from "./Keywords";
 import { Token } from "./Token";
 
@@ -40,6 +40,16 @@ export class Lexer {
             case "+": this.AddToken(SyntaxType.PLUS); break;
             case ";": this.AddToken(SyntaxType.SEMICOLON); break;
             case "*": this.AddToken(SyntaxType.STAR); break;
+            case '/': this.AddToken(SyntaxType.SLASH); break;
+            case "^": this.AddToken(SyntaxType.CARAT); break;
+            case "%": this.AddToken(SyntaxType.PERCENT); break;
+            case "#": 
+                if (this.Match("#"))
+                    while (this.Peek() !== '\n' && !this.Completed)
+                        this.Advance();
+                else
+                    this.AddToken(SyntaxType.HASHTAG);
+                break;
             case '!':
                 this.AddToken(this.Match('=') ? SyntaxType.BANG_EQUAL : SyntaxType.BANG);
                 break;
@@ -51,13 +61,6 @@ export class Lexer {
                 break;
             case '>':
                 this.AddToken(this.Match('=') ? SyntaxType.GREATER_EQUAL : SyntaxType.GREATER);
-                break;
-            case '/':
-                if (this.Match('/')) 
-                    while (this.Peek() !== '\n' && !this.Completed)
-                        this.Advance();
-                else
-                    this.AddToken(SyntaxType.SLASH);
                 break;
 
             case ' ':
