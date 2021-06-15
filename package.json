@@ -1,11 +1,12 @@
 {
   "name": "ether-lang",
-  "version": "1.2.0",
+  "version": "1.1.0",
   "description": "An interpreter",
   "main": "dist/Main.js",
   "scripts": {
     "start": "npm test && node dist/Main.js",
-    "test": "tsc && npm i && mocha --exit"
+    "test": "tsc && npm i && mocha --exit",
+    "publish": "np --no-2fa"
   },
   "bin": "bin",
   "repository": {
