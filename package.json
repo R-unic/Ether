@@ -1,5 +1,5 @@
 {
-  "name": "ether",
+  "name": "ether-lang",
   "version": "1.0.0",
   "description": "An interpreter",
   "main": "dist/Main.js",
@@ -22,7 +22,7 @@
     "ts",
     "typescript"
   ],
-  "author": "AlphaRunic",
+  "author": "runicly",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/AlphaRunic/Ether/issues"
