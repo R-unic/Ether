@@ -7,13 +7,14 @@
     "start": "tsc && node dist/Main.js",
     "test": "tsc && npm i && mocha"
   },
+  "bin": "bin",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AlphaRunic/Ether.git"
   },
   "mocha": {
     "file": [
-      "dist/Testing/Lexer_LexesTokens.js"
+      "dist/Testing/LexerTest.js"
     ]
   },
   "keywords": [

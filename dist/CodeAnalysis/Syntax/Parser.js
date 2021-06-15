@@ -19,7 +19,7 @@ class Parser {
         return statements;
     }
     Expression() {
-        return this.Equality();
+        return this.AndOr();
     }
     Statement() {
         if (this.Match(SyntaxType_1.SyntaxType.PRINT))
@@ -35,6 +35,15 @@ class Parser {
         const expr = this.Expression();
         this.Consume(SyntaxType_1.SyntaxType.SEMICOLON, "Expected ';' after expression.");
         return new Statement_1.Stmt.Expression(expr);
+    }
+    AndOr() {
+        let expr = this.Equality();
+        while (this.Match(SyntaxType_1.SyntaxType.AND, SyntaxType_1.SyntaxType.OR)) {
+            const operator = this.Previous();
+            const right = this.Equality();
+            expr = new Expression_1.Expr.Binary(expr, operator, right);
+        }
+        return expr;
     }
     Equality() {
         let expr = this.Comparison();
@@ -94,7 +103,6 @@ class Parser {
             this.Consume(SyntaxType_1.SyntaxType.RIGHT_PAREN, "Expected ')' after expression.");
             return new Expression_1.Expr.Grouping(expr);
         }
-        console.log(this.Peek(), this.Previous(), this.Peek(1));
         throw this.Error(this.Peek(), "Expected expression.");
     }
     Match(...types) {

@@ -1,0 +1,5 @@
+print "hello, world!";
+print "foo";
+print 'bar';
+print true & false != false | true;
+print "ether" + "\n" + "is cool";

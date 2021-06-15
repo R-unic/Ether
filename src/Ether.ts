@@ -64,6 +64,8 @@ export class Ether {
 
         if (this.hadRuntimeError)
             exit(70);
+
+        exit();
     }
 
     public static Run(sourceCode: string): void {

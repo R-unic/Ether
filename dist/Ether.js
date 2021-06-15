@@ -52,6 +52,7 @@ class Ether {
             process_1.exit(65);
         if (this.hadRuntimeError)
             process_1.exit(70);
+        process_1.exit();
     }
     static Run(sourceCode) {
         const lexer = new Lexer_1.Lexer(sourceCode);

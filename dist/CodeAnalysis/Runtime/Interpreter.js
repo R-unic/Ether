@@ -32,7 +32,7 @@ class Interpreter {
             return "null";
         if (typeof value === "number")
             return value.toString();
-        return value || value.toString();
+        return String(value) || value || value.toString();
     }
     VisitExpressionStmt(stmt) {
         this.Evaluate(stmt.Expression);
@@ -48,6 +48,10 @@ class Interpreter {
         const left = this.Evaluate(expr.Left);
         const right = this.Evaluate(expr.Right);
         switch (expr.Operator.Type) {
+            case SyntaxType_1.SyntaxType.AND:
+                return left && right;
+            case SyntaxType_1.SyntaxType.OR:
+                return left || right;
             case SyntaxType_1.SyntaxType.BANG_EQUAL: return !this.IsEqual(left, right);
             case SyntaxType_1.SyntaxType.EQUAL_EQUAL: return this.IsEqual(left, right);
             case SyntaxType_1.SyntaxType.GREATER:

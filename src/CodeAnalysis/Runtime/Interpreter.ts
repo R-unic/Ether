@@ -2,7 +2,7 @@ import { log } from "console";
 import { Ether } from "../../Ether";
 import { Expr } from "../Syntax/Expression";
 import { Stmt } from "../Syntax/Statement";
-import { SyntaxType } from "../Syntax/SyntaxType";
+import { SyntaxType as Syntax } from "../Syntax/SyntaxType";
 import { Token } from "../Syntax/Token";
 
 export class RuntimeError extends EvalError {
@@ -60,21 +60,26 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
         const right: unknown = this.Evaluate(expr.Right);
 
         switch (expr.Operator.Type) {
-            case SyntaxType.BANG_EQUAL: return !this.IsEqual(left, right);
-            case SyntaxType.EQUAL_EQUAL: return this.IsEqual(left, right);
-            case SyntaxType.GREATER:
+            case Syntax.AND: 
+                return (left as boolean) && (right as boolean);
+            case Syntax.OR: 
+                return (left as boolean) || (right as boolean);
+
+            case Syntax.BANG_EQUAL: return !this.IsEqual(left, right);
+            case Syntax.EQUAL_EQUAL: return this.IsEqual(left, right);
+            case Syntax.GREATER:
                 this.CheckNumberOperands(expr.Operator, left, right);
                 return (left as number) > (right as number);
-            case SyntaxType.GREATER_EQUAL:
+            case Syntax.GREATER_EQUAL:
                 this.CheckNumberOperands(expr.Operator, left, right);
                 return (left as number) >= (right as number);
-            case SyntaxType.LESS:
+            case Syntax.LESS:
                 this.CheckNumberOperands(expr.Operator, left, right);
                 return (left as number) < (right as number);
-            case SyntaxType.LESS_EQUAL:
+            case Syntax.LESS_EQUAL:
                 return (left as number) <= (right as number);
 
-            case SyntaxType.PLUS: {
+            case Syntax.PLUS: {
                 if (typeof left === "number" && typeof right === "number")
                     return (left as number) + (right as number);
 
@@ -84,19 +89,19 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
                 throw new RuntimeError(expr.Operator, "Operands must be two numbers or two strings.");
             }
                 
-            case SyntaxType.MINUS:
+            case Syntax.MINUS:
                 this.CheckNumberOperands(expr.Operator, left, right);
                 return (left as number) - (right as number);
-            case SyntaxType.SLASH:
+            case Syntax.SLASH:
                 this.CheckNumberOperands(expr.Operator, left, right);
                 return (left as number) / (right as number);
-            case SyntaxType.STAR:
+            case Syntax.STAR:
                 this.CheckNumberOperands(expr.Operator, left, right);
                 return (left as number) * (right as number);
-            case SyntaxType.CARAT:
+            case Syntax.CARAT:
                 this.CheckNumberOperands(expr.Operator, left, right);
                 return (left as number) ** (right as number);
-            case SyntaxType.PERCENT:
+            case Syntax.PERCENT:
                 this.CheckNumberOperands(expr.Operator, left, right);
                 return (left as number) % (right as number);
         }
@@ -116,9 +121,9 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
         const right: unknown = this.Evaluate(expr.Right);
 
         switch (expr.Operator.Type) {
-            case SyntaxType.BANG:
+            case Syntax.BANG:
                 return !this.IsTruthy(right);
-            case SyntaxType.MINUS:
+            case Syntax.MINUS:
                 this.CheckNumberOperand(expr.Operator, right)
                 return -(right as number)
         }

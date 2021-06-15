@@ -22,7 +22,7 @@ export class Parser {
     }
 
     public Expression(): Expr.Expression {
-        return this.Equality();
+        return this.AndOr();
     }
 
     public Statement(): Stmt.Statement {
@@ -42,6 +42,18 @@ export class Parser {
         const expr: Expr.Expression = this.Expression();
         this.Consume(Syntax.SEMICOLON, "Expected ';' after expression.");
         return new Stmt.Expression(expr);
+    }
+
+    private AndOr(): Expr.Expression {
+        let expr: Expr.Expression = this.Equality();
+
+        while (this.Match(Syntax.AND, Syntax.OR)) {
+            const operator: Token = this.Previous();
+            const right: Expr.Expression = this.Equality();
+            expr = new Expr.Binary(expr, operator, right);
+        }
+
+        return expr;
     }
  
     private Equality(): Expr.Expression {
@@ -120,8 +132,6 @@ export class Parser {
             this.Consume(Syntax.RIGHT_PAREN, "Expected ')' after expression.");
             return new Expr.Grouping(expr);
         }
-
-        console.log(this.Peek(), this.Previous(), this.Peek(1));
         
         throw this.Error(this.Peek(), "Expected expression.");
     }
