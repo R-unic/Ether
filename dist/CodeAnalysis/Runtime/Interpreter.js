@@ -32,7 +32,7 @@ class Interpreter {
         this.Globals.Define("time", new Time_1.TimeMethod);
         this.Globals.Define("warn", new Warn_1.WarnMethod);
         this.Globals.Define("wait", new Wait_1.WaitMethod);
-        this.Globals.Define("__etherversion", `Ether 1.3.0`);
+        this.Globals.Define("__etherversion", `Ether 1.4.0`);
     }
     Interpret(parser, statements, repl) {
         try {
