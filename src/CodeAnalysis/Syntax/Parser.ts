@@ -27,9 +27,12 @@ export class Parser {
 
     private Declaration(): Stmt.Statement | undefined {
         try {
+            if (this.Match(Syntax.METHOD))
+                return this.Method("method");
+
             if (this.Match(Syntax.LET))
                 return this.VarDeclaration();
-                
+
             return this.Statement();
         } catch (err) {
             this.Synchronize();
@@ -49,13 +52,124 @@ export class Parser {
     }
 
     private Statement(): Stmt.Statement {
-        if (this.Match(Syntax.PRINT))
+        if (this.Match(Syntax.RETURN))
+            return this.ReturnStatement()
+
+        if (this.Match(Syntax.FOR))
+            return this.ForStatement();
+
+        if (this.Match(Syntax.IF))
+            return this.IfStatement();
+
+        if (this.Match(Syntax.RAISE))
+            return this.RaiseStatement()
+
+         if (this.Match(Syntax.PRINT))
             return this.PrintStatement();
+
+        if (this.Match(Syntax.WHILE))
+            return this.WhileStatement();
 
         if (this.Match(Syntax.LEFT_BRACE))
             return new Stmt.Block(this.Block());
 
         return this.ExpressionStatement();
+    }
+
+    private ReturnStatement(): Stmt.Return {
+        const keyword: Token = this.Previous();
+        let value: Expr.Expression | undefined = undefined;
+        if (!this.Check(Syntax.SEMICOLON))
+            value = this.Expression();
+
+        this.Consume(Syntax.SEMICOLON, "Expected ';' after return value.");
+        return new Stmt.Return(keyword, value as Expr.Expression);
+    }
+
+    private RaiseStatement(): Stmt.Raise {
+        const value: Expr.Expression = this.Expression();
+        this.Consume(Syntax.SEMICOLON, "Expected ';' after raised value.");
+        return new Stmt.Raise(this.Peek(-3), value);
+    }
+
+    private Method(kind: string): Stmt.Method {
+        const name: Token = this.Consume(Syntax.IDENTIFIER, `Expected ${kind} name.`);
+        this.Consume(Syntax.LEFT_PAREN, `Expected '(' after ${kind} name.`);
+
+        const parameters: Token[] = [];
+        if (!this.Check(Syntax.RIGHT_PAREN))
+            do {
+                if (parameters.length >= 255)
+                    this.Error(this.Peek(), "Methods can't have more than 255 parameters.");
+
+                parameters.push(
+                    this.Consume(Syntax.IDENTIFIER, "Expected parameter name.")
+                );
+            } while (this.Match(Syntax.COMMA));
+
+        this.Consume(Syntax.RIGHT_PAREN, "Expected ')' after method parameters.");
+        this.Consume(Syntax.LEFT_BRACE, `Expected '{' before ${kind} body.`);
+
+        const body: Stmt.Statement[] = this.Block();
+        return new Stmt.Method(name, parameters, body);
+    }
+
+    private ForStatement(): Stmt.Statement {
+        this.Consume(Syntax.LEFT_PAREN, "Expected '(' after 'for'.");
+
+        let initializer: Stmt.Statement | undefined;
+        if (this.Match(Syntax.SEMICOLON))
+            initializer = undefined;
+        else if (this.Match(Syntax.LET))
+            initializer = this.VarDeclaration();
+        else
+            initializer = this.ExpressionStatement();
+
+        let condition: Expr.Expression | undefined = undefined;
+        if (!this.Check(Syntax.SEMICOLON))
+            condition = this.Expression();
+
+        this.Consume(Syntax.SEMICOLON, "Expected ';' after loop condition.");
+        let increment: Expr.Expression | undefined = undefined;
+        if (!this.Check(Syntax.RIGHT_PAREN))
+            increment = this.Expression();
+
+        this.Consume(Syntax.RIGHT_PAREN, "Expected ')' after clauses.");
+        let body: Stmt.Statement = this.Statement();
+
+        if (increment !== undefined)
+            body = new Stmt.Block([ body, new Stmt.Expression(increment) ]);
+
+        if (condition === undefined)
+            condition = new Expr.Literal(true);
+
+        body = new Stmt.While(condition, body);
+        if (initializer !== undefined)
+            body = new Stmt.Block([ initializer, body ]);
+            
+        return body;
+    }
+
+    private WhileStatement(): Stmt.While {
+        this.Consume(Syntax.LEFT_PAREN, "Expected '(' after 'while'.");
+        const condition: Expr.Expression = this.Expression();
+        this.Consume(Syntax.RIGHT_PAREN, "Expected ')' after condition.");
+        const body: Stmt.Statement = this.Statement();
+
+        return new Stmt.While(condition, body);
+    }
+
+    private IfStatement(): Stmt.If {
+        this.Consume(Syntax.LEFT_PAREN, "Expected '(' after 'if'.");
+        const condition: Expr.Expression = this.Expression();
+        this.Consume(Syntax.RIGHT_PAREN, "Expected ')' after if condition.");
+
+        const thenBranch: Stmt.Statement = this.Statement();
+        let elseBranch: Stmt.Statement | undefined = undefined;
+        if (this.Match(Syntax.ELSE))
+            elseBranch = this.Statement();
+
+        return new Stmt.If(condition, thenBranch, elseBranch)
     }
 
     private PrintStatement(): Stmt.Print {
@@ -81,14 +195,15 @@ export class Parser {
     }
 
     private Assignment(): Expr.Expression {
-        const expr: Expr.Expression = this.AndOr();
+        const expr: Expr.Expression = this.Or();
 
         if (this.Match(Syntax.EQUAL)) {
             const equals: Token = this.Previous();
             const value: Expr.Expression = this.Assignment();
 
             if (expr instanceof Expr.Variable) {
-                const name: Token = (expr as Expr.Variable).Name;
+                const varExpr = expr as Expr.Variable;
+                const name: Token = varExpr.Name;
                 return new Expr.Assign(name, value);
             }
 
@@ -97,19 +212,31 @@ export class Parser {
 
         return expr;
     }
+ 
+    private Or(): Expr.Expression {
+        let expr: Expr.Expression = this.And();
 
-    private AndOr(): Expr.Expression {
-        let expr: Expr.Expression = this.Equality();
-
-        while (this.Match(Syntax.AND, Syntax.OR)) {
+        while (this.Match(Syntax.OR)) {
             const operator: Token = this.Previous();
-            const right: Expr.Expression = this.Equality();
-            expr = new Expr.Binary(expr, operator, right);
+            const right: Expr.Expression = this.And();
+            expr = new Expr.Logical(expr, operator, right);
         }
 
         return expr;
     }
- 
+
+    private And(): Expr.Expression {
+        let expr: Expr.Expression = this.Equality();
+
+        while (this.Match(Syntax.AND)) {
+            const operator: Token = this.Previous();
+            const right: Expr.Expression = this.Equality();
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
+        return expr;
+    }
+
     private Equality(): Expr.Expression {
         let expr: Expr.Expression = this.Comparison();
 
@@ -165,7 +292,32 @@ export class Parser {
             return new Expr.Unary(operator, right);
         }
 
-        return this.Primary();
+        return this.Call();
+    }
+
+    private Call(): Expr.Expression {
+        let expr: Expr.Expression = this.Primary();
+
+        while (true)
+            if (this.Match(Syntax.LEFT_PAREN))
+                expr = this.FinishCall(expr);
+            else
+                break;
+
+        return expr;
+    }
+
+    private FinishCall(callee: Expr.Expression): Expr.Call {
+        const args: Expr.Expression[] = [];
+        if (!this.Check(Syntax.RIGHT_PAREN))
+            do {
+                if (args.length >= 255)
+                    this.Error(this.Peek(), "Method call can't have more than 255 arguments.");
+                args.push(this.Expression());
+            } while (this.Match(Syntax.COMMA));
+
+        const paren: Token = this.Consume(Syntax.RIGHT_PAREN, "Expected ')' after argument list.");
+        return new Expr.Call(callee, paren, args);
     }
 
     private Primary(): Expr.Expression {
@@ -215,11 +367,11 @@ export class Parser {
         return this.Previous();
     }
 
-    private get Completed() {
+    public get Completed() {
         return this.Peek().Type === Syntax.EOF;
     }
 
-    private Peek(offset: number = 0): Token {
+    public Peek(offset: number = 0): Token {
         return this.tokens[this.current + offset];
     }
 

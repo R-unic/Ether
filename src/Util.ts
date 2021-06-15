@@ -6,5 +6,5 @@ let rl: Interface = createInterface({
     output: stdout
 });
 
-export const Input = (prompt: string, callback: (result: string) => void): void => 
+export const Input = (prompt: string, callback: (result: string) => void): void =>
     rl.question(prompt, received => callback(received));

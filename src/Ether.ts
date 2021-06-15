@@ -1,4 +1,5 @@
 import { error, log } from "console";
+import { yellow, red, green, rainbow } from "colors/safe";
 import { readFileSync } from "fs";
 import { exit } from "process";
 import { Input } from "./Util";
@@ -16,16 +17,23 @@ export class Ether {
 
     public static Main(args: string[]): void {
         if (args.length > 1) {
-            log("Usage: ether [script]");
+            log(yellow("Usage: ether [script]"));
             exit(64);
         } else if (args.length === 1)
             this.RunFile(args[0]);
-        else
+        else {
+            log("Welcome to the " + rainbow("Ether") + " REPL!")
             this.RunPrompt();
+        }
+    }
+    
+    public static RaiseError(tokenOrLine: Token | number, message: string): void {
+        error(red(`[line ${typeof tokenOrLine === "number" ? tokenOrLine : tokenOrLine.Line}] Raised Error: ${message}`));
+        this.hadError = true;
     }
 
-    public static RuntimeError(error: RuntimeError) {
-        log(`[line ${error.Token.Line}] RuntimeError: ${error.message}`);
+    public static RuntimeError(err: RuntimeError): void {
+        error(red(`[line ${err.Token?.Line?? "?"}] RuntimeError: ${err.message}`));
         this.hadRuntimeError = true;
     }
 
@@ -40,12 +48,12 @@ export class Ether {
     }
 
     public static Report(line: number, where: string, message: string): void {
-        error(`[line ${line}] Error${where}: ${message}`);
+        error(red(`[line ${line}] Error${where}: ${message}`));
         this.hadError = true;
     }
 
     public static RunPrompt(): void {
-        Input("Ether » ", line => {
+        Input(green("Ether » "), line => {
             if (!line || line === "")
                 return;
 
@@ -78,6 +86,6 @@ export class Ether {
         if (this.hadError)
             return;
 
-        this.interpreter.Interpret(statements, repl);
+        this.interpreter.Interpret(parser, statements, repl);
     }
 }

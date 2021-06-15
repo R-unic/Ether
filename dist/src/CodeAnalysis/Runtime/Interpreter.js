@@ -11,6 +11,7 @@ const Time_1 = require("./Lib/Time");
 const Wait_1 = require("./Lib/Wait");
 const Warn_1 = require("./Lib/Warn");
 const Method_1 = require("./Method");
+const pkg = require("../../../package.json");
 class RuntimeError extends EvalError {
     constructor(Token, message) {
         super(message);
@@ -19,8 +20,8 @@ class RuntimeError extends EvalError {
 }
 exports.RuntimeError = RuntimeError;
 class Return extends RuntimeError {
-    constructor(Value, token) {
-        super(token, "A 'return' statement can only be used within a function body.");
+    constructor(Value) {
+        super();
         this.Value = Value;
     }
 }
@@ -32,7 +33,7 @@ class Interpreter {
         this.Globals.Define("time", new Time_1.TimeMethod);
         this.Globals.Define("warn", new Warn_1.WarnMethod);
         this.Globals.Define("wait", new Wait_1.WaitMethod);
-        this.Globals.Define("__etherversion", `Ether 1.3.0`);
+        this.Globals.Define("__etherversion", `Ether ${pkg.version}`);
     }
     Interpret(parser, statements, repl) {
         try {
@@ -70,7 +71,7 @@ class Interpreter {
         let value = undefined;
         if (stmt.Value !== undefined)
             value = this.Evaluate(stmt.Value);
-        throw new Return(value, stmt.Keyword);
+        throw new Return(value);
     }
     VisitRaiseStmt(stmt) {
         const value = this.Evaluate(stmt.Expression);

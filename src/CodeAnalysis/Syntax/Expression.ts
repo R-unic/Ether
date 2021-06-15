@@ -6,12 +6,42 @@ export namespace Expr {
     }
 
     export interface Visitor<R> {
-        VisitAssignExpr(expr: Assign): R
+        VisitAssignExpr(expr: Assign): R;
+        VisitCallExpr(expr: Call): R;
         VisitBinaryExpr(expr: Binary): R;
         VisitGroupingExpr(expr: Grouping): R;
         VisitLiteralExpr(expr: Literal): R;
+        VisitLogicalExpr(expr: Logical): R;
         VisitUnaryExpr(expr: Unary): R;
         VisitVariableExpr(expr: Variable): R;
+    }
+
+    export class Call extends Expression {
+        public constructor(
+            public readonly Callee: Expression,
+            public readonly Paren: Token,
+            public readonly Arguments: Expression[],
+        ) {
+            super()
+        }
+
+        public Accept<R>(visitor: Visitor<R>): R {
+            return visitor.VisitCallExpr(this);
+        }
+    }
+
+    export class Logical extends Expression {
+        public constructor(
+            public readonly Left: Expr.Expression,
+            public readonly Operator: Token,
+            public readonly Right: Expr.Expression,
+        ) {
+            super();
+        }
+
+        public Accept<R>(visitor: Visitor<R>): R {
+            return visitor.VisitLogicalExpr(this);
+        }
     }
 
     export class Assign extends Expression {

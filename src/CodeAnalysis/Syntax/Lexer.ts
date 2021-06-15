@@ -36,13 +36,37 @@ export class Lexer {
             case "}": this.AddToken(Syntax.RIGHT_BRACE); break;
             case ",": this.AddToken(Syntax.COMMA); break;
             case ".": this.AddToken(Syntax.DOT); break;
-            case "-": this.AddToken(Syntax.MINUS); break;
-            case "+": this.AddToken(Syntax.PLUS); break;
             case ";": this.AddToken(Syntax.SEMICOLON); break;
-            case "*": this.AddToken(Syntax.STAR); break;
-            case '/': this.AddToken(Syntax.SLASH); break;
-            case "^": this.AddToken(Syntax.CARAT); break;
-            case "%": this.AddToken(Syntax.PERCENT); break;
+            case "-": {
+                let type = Syntax.MINUS;
+                if (this.Match('='))
+                    type = Syntax.MINUS_EQUALS;
+                if (this.Match('-'))
+                    type = Syntax.MINUS_MINUS;
+                this.AddToken(type);  
+                break;
+            } 
+            case "+": {
+                let type = Syntax.PLUS;
+                if (this.Match('='))
+                    type = Syntax.PLUS_EQUALS;
+                if (this.Match('+'))
+                    type = Syntax.PLUS_PLUS;
+                this.AddToken(type);  
+                break;
+            }
+            case "*": 
+                this.AddToken(this.Match('=') ? Syntax.STAR_EQUALS : Syntax.STAR);  
+                break;
+            case '/': 
+                this.AddToken(this.Match('=') ? Syntax.SLASH_EQUALS : Syntax.SLASH);  
+                break;
+            case "^": 
+                this.AddToken(this.Match('=') ? Syntax.CARAT_EQUALS : Syntax.CARAT);  
+                break;
+            case "%": 
+                this.AddToken(this.Match('=') ? Syntax.PERCENT_EQUALS : Syntax.PERCENT);  
+                break;
             case "#": 
                 if (this.Match("#"))
                     this.SkipComment();
@@ -77,9 +101,11 @@ export class Lexer {
                 break;
 
             case "|":
-                this.AddToken(Syntax.OR); break;
+                this.AddToken(this.Match('=') ? Syntax.OR_EQUALS : Syntax.OR); 
+                break;
             case "&":
-                this.AddToken(Syntax.AND); break;
+                this.AddToken(this.Match('=') ? Syntax.AND_EQUALS : Syntax.AND); 
+                break;
 
             default:
                 if (this.IsDigit(char))

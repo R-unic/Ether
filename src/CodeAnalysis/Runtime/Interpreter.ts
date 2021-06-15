@@ -1,29 +1,55 @@
+import { cyan, green, magenta, red, yellow } from "colors/safe";
 import { log } from "console";
 import { Ether } from "../../Ether";
 import { Expr } from "../Syntax/Expression";
+import { Parser } from "../Syntax/Parser";
 import { Stmt } from "../Syntax/Statement";
 import { SyntaxType as Syntax } from "../Syntax/SyntaxType";
 import { Token } from "../Syntax/Token";
+import { Callable } from "./Callable";
 import { Environment } from "./Environment";
+import { TimeMethod } from "./Lib/Time";
+import { WaitMethod } from "./Lib/Wait";
+import { WarnMethod } from "./Lib/Warn";
+import { Method } from "./Method";
 
 export class RuntimeError extends EvalError {
     public constructor(
-        public readonly Token: Token, 
+        public readonly Token?: Token, 
         message?: string
     ) {
         super(message);
     }
 }
 
-export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
-    private environment = new Environment;
+export class Return extends RuntimeError {
+    public constructor(
+        public readonly Value: unknown,
+        token: Token
+    ) {
+        super(token, "A 'return' statement can only be used within a function body.");
+    }
+}
 
-    public Interpret(statements: Stmt.Statement[], repl: boolean): void {
+export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
+    public readonly Globals = new Environment;
+    public Parser?: Parser;
+    private environment = this.Globals;
+
+    public constructor() {
+        this.Globals.Define("time", new TimeMethod);
+        this.Globals.Define("warn", new WarnMethod);
+        this.Globals.Define("wait", new WaitMethod);
+        this.Globals.Define("__etherversion", `Ether 1.4.0`);
+    }
+
+    public Interpret(parser: Parser, statements: Stmt.Statement[], repl: boolean): void {
         try {
+            this.Parser = parser;
             for(const statement of statements)
                 if (statement instanceof Stmt.Expression && repl === true) {
                     const value: unknown = this.Evaluate(statement.Expression);
-                    log(this.Stringify(value));
+                    log(this.GetStyling(value));
                 } else
                     this.Execute(statement);
         } catch (err) {
@@ -39,7 +65,7 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
         stmt.Accept<void>(this);
     }
 
-    private ExecuteBlock(statements: Stmt.Statement[], environment: Environment): void {
+    public ExecuteBlock(statements: Stmt.Statement[], environment: Environment): void {
         const previous: Environment = this.environment;
 
         try {
@@ -52,6 +78,36 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
         }
     }
 
+    public VisitReturnStmt(stmt: Stmt.Return): void {
+        let value: unknown = undefined;
+        if (stmt.Value !== undefined)
+            value = this.Evaluate(stmt.Value);
+
+        throw new Return(value, stmt.Keyword);
+    }
+
+    public VisitRaiseStmt(stmt: Stmt.Raise): void {
+        const value: unknown = this.Evaluate(stmt.Expression);
+        Ether.RaiseError(stmt.Token, this.Stringify(value));
+    }
+
+    public VisitMethodStmt(stmt: Stmt.Method): void {
+        const method = new Method(stmt, this.environment);
+        this.environment.Define(stmt.Name.Lexeme, method);
+    }
+
+    public VisitWhileStmt(stmt: Stmt.While): void {
+        while (this.IsTruthy(this.Evaluate(stmt.Condition)))
+            this.Execute(stmt.Body);
+    }
+
+    public VisitIfStmt(stmt: Stmt.If): void {
+        if (this.IsTruthy(this.Evaluate(stmt.Condition)))
+            this.Execute(stmt.ThenBranch);
+        else if (stmt.ElseBranch !== undefined)
+            this.Execute(stmt.ElseBranch);
+    }
+
     public VisitBlockStmt(stmt: Stmt.Block): void {
         this.ExecuteBlock(stmt.Statements, new Environment(this.environment));
     }
@@ -60,13 +116,9 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
         this.Evaluate(stmt.Expression);
     }
 
-    public VisitIfStmt(stmt: Stmt.If): void {
-        throw new Error("Method not implemented.");
-    }
-
     public VisitPrintStmt(stmt: Stmt.Print): void {
         const value: unknown = this.Evaluate(stmt.Expression);
-        log(this.Stringify(value));
+        log(this.GetStyling(value) !== undefined ? this.GetStyling(value) : this.Stringify(value));
     }
 
     public VisitVariableStmt(stmt: Stmt.Variable): void {
@@ -76,9 +128,36 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
 
         this.environment.Define(stmt.Name.Lexeme, value);
     }
-    
-    public VisitWhileStmt(stmt: Stmt.While): void {
-        throw new Error("Method not implemented.");
+
+    public VisitCallExpr(expr: Expr.Call): unknown {
+        const callee: unknown = this.Evaluate(expr.Callee);
+
+        const args: unknown[] = [];
+        for (const arg of expr.Arguments)
+            args.push(this.Evaluate(arg));
+
+        const method = callee as Callable;
+        if (!method)
+            throw new RuntimeError(expr.Paren, "Can only call methods and classes.");
+
+        if (args.length != method.Arity())
+            throw new RuntimeError(expr.Paren, `Expected ${method.Arity()} arguments, got ${args.length}.`);
+
+        return method.Call(this, args);
+    }
+
+    public VisitLogicalExpr(expr: Expr.Logical): unknown {
+        const left: unknown = this.Evaluate(expr.Left);
+
+        if (expr.Operator.Type === Syntax.OR) {
+            if (this.IsTruthy(left))
+                return left;
+        } else {
+            if (!this.IsTruthy(left))
+                return left;
+        }
+        
+        return this.Evaluate(expr.Right);
     }
 
     public VisitAssignExpr(expr: Expr.Assign): unknown {
@@ -96,13 +175,6 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
         const right: unknown = this.Evaluate(expr.Right);
 
         switch (expr.Operator.Type) {
-            case Syntax.AND: 
-                this.CheckBooleanOperands(expr.Operator, left, right);
-                return (left as boolean) && (right as boolean);
-            case Syntax.OR:
-                this.CheckBooleanOperands(expr.Operator, left, right);
-                return (left as boolean) || (right as boolean);
-
             case Syntax.BANG_EQUAL: return !this.IsEqual(left, right);
             case Syntax.EQUAL_EQUAL: return this.IsEqual(left, right);
             case Syntax.GREATER:
@@ -162,35 +234,50 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
             case Syntax.BANG:
                 return !this.IsTruthy(right);
             case Syntax.MINUS:
-                this.CheckNumberOperand(expr.Operator, right)
-                return -(right as number)
+                this.CheckNumberOperand(expr.Operator, right);
+                return -(right as number);
+            case Syntax.PLUS:
+                this.CheckNumberOperand(expr.Operator, right);
+                return Math.abs(right as number);
         }
 
         return void 0;
     }
 
-    private Stringify(value: unknown): string {
+    public GetStyling(value: unknown): string | undefined {
+        const strValue: string = this.Stringify(value);
+        if (strValue === "null")
+            return cyan(strValue);
+
+        if (value instanceof Error)
+            return red(strValue);
+
+        switch (typeof value) {
+            case "boolean":
+                return yellow(strValue);
+            case "number":
+                return magenta(strValue);
+            case "string":
+                return green(`"${strValue}"`);
+        }
+
+        return strValue;
+    }
+
+    public Stringify(value: unknown): string {
         if (value === null || value === undefined)
             return "null";
+
+        if (typeof value === "string")
+            return value;
 
         if (typeof value === "number")
             return value.toString();
 
-        return value as string || (value as object).toString();
-    }
+        // if (value instanceof Callable)
+        //     return value.ToString();
 
-    private CheckBooleanOperand(operator: Token, operand: unknown): void {
-        if (typeof operand === "boolean")
-            return;
-
-        throw new RuntimeError(operator, "Operand must be a boolean.");
-    }
-
-    private CheckBooleanOperands(operator: Token, left: unknown, right: unknown): void {
-        if (typeof left === "boolean" && typeof right === "boolean")
-            return;
-
-        throw new RuntimeError(operator, "Operands must be booleans.");
+        return (value as object).toString() || value as string;
     }
 
     private CheckNumberOperand(operator: Token, operand: unknown): void {
