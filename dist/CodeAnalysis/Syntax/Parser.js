@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Parser = void 0;
-const Ether_1 = require("../Ether");
-const SyntaxType_1 = require("./Enumerations/SyntaxType");
+const Ether_1 = require("../../Ether");
+const SyntaxType_1 = require("../Syntax/SyntaxType");
 const Expression_1 = require("./Expression");
 class ParserError extends SyntaxError {
 }

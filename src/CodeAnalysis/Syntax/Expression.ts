@@ -6,10 +6,10 @@ export namespace Expr {
     }
 
     export interface Visitor<R> {
-        VisitBinary(binary: Binary): R
-        VisitGrouping(binary: Grouping): R
-        VisitLiteral(binary: Literal): R
-        VisitUnary(binary: Unary): R
+        VisitBinary(expr: Binary): R
+        VisitGrouping(expr: Grouping): R
+        VisitLiteral(expr: Literal): R
+        VisitUnary(expr: Unary): R
     }
 
     export class Grouping extends Base {

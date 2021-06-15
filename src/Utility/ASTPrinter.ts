@@ -1,4 +1,4 @@
-import { Expr } from "../SyntaxAnalysis/Expression";
+import { Expr } from "../CodeAnalysis/Syntax/Expression";
 import { StringBuilder } from "./StringBuilder";
 
 export class ASTPrinter implements Expr.Visitor<string> {

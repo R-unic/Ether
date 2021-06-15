@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const mocha_1 = require("mocha");
 const chai_1 = require("chai");
-const Lexer_1 = require("../../SyntaxAnalysis/Lexer");
-const SyntaxType_1 = require("../../SyntaxAnalysis/Enumerations/SyntaxType");
+const Lexer_1 = require("../../CodeAnalysis/Syntax/Lexer");
+const SyntaxType_1 = require("../../CodeAnalysis/Syntax/SyntaxType");
 mocha_1.describe("Lexer lexes tokens", () => {
     mocha_1.describe("Add and subtract", () => {
         const lexer = new Lexer_1.Lexer("4 + 7 - 3");

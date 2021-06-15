@@ -1,4 +1,4 @@
-import { SyntaxType } from "./Enumerations/SyntaxType";
+import { SyntaxType } from "./SyntaxType";
 
 export class Token {
     public constructor(

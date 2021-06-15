@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Lexer = void 0;
-const Ether_1 = require("../Ether");
-const SyntaxType_1 = require("./Enumerations/SyntaxType");
+const Ether_1 = require("../../Ether");
+const SyntaxType_1 = require("./SyntaxType");
 const Keywords_1 = require("./Keywords");
 const Token_1 = require("./Token");
 class Lexer {

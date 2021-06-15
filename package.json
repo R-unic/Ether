@@ -4,8 +4,8 @@
   "description": "An interpreter",
   "main": "dist/Main.js",
   "scripts": {
-    "start": "node dist/Main.js",
-    "test": "tsc && mocha"
+    "start": "tsc && node dist/Main.js",
+    "test": "tsc && npm i && mocha"
   },
   "repository": {
     "type": "git",

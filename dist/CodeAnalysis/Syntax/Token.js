@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Token = void 0;
-const SyntaxType_1 = require("./Enumerations/SyntaxType");
+const SyntaxType_1 = require("./SyntaxType");
 class Token {
     constructor(Type, Lexeme, Literal, Line) {
         this.Type = Type;

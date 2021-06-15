@@ -1,4 +1,4 @@
-import { SyntaxType } from "./Enumerations/SyntaxType";
+import { SyntaxType } from "./SyntaxType";
 
 export const Keywords = new Map<string, SyntaxType>(Object.entries({
     "else": SyntaxType.ELSE,

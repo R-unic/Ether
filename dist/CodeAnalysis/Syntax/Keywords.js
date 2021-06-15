@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Keywords = void 0;
-const SyntaxType_1 = require("./Enumerations/SyntaxType");
+const SyntaxType_1 = require("./SyntaxType");
 exports.Keywords = new Map(Object.entries({
     "else": SyntaxType_1.SyntaxType.ELSE,
     "false": SyntaxType_1.SyntaxType.FALSE,

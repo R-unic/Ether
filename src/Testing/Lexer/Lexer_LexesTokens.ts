@@ -1,8 +1,8 @@
 import { describe } from "mocha";
 import { expect } from "chai";
-import { Lexer } from "../../SyntaxAnalysis/Lexer";
-import { Token } from "../../SyntaxAnalysis/Token";
-import { SyntaxType } from "../../SyntaxAnalysis/Enumerations/SyntaxType";
+import { Lexer } from "../../CodeAnalysis/Syntax/Lexer";
+import { Token } from "../../CodeAnalysis/Syntax/Token";
+import { SyntaxType } from "../../CodeAnalysis/Syntax/SyntaxType";
 
 describe("Lexer lexes tokens", () => {
     describe("Add and subtract", () => {

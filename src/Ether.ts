@@ -1,16 +1,19 @@
 import { error, log } from "console";
 import { readFileSync } from "fs";
 import { exit } from "process";
-import { Lexer } from "./SyntaxAnalysis/Lexer";
-import { Token } from "./SyntaxAnalysis/Token";
 import { Input } from "./Util";
-import { SyntaxType } from "./SyntaxAnalysis/Enumerations/SyntaxType";
-import { Parser } from "./SyntaxAnalysis/Parser";
-import { Expr } from "./SyntaxAnalysis/Expression";
 import { ASTPrinter } from "./Utility/ASTPrinter";
+import { Lexer } from "./CodeAnalysis/Syntax/Lexer";
+import { Token } from "./CodeAnalysis/Syntax/Token";
+import { SyntaxType } from "./CodeAnalysis/Syntax/SyntaxType";
+import { Parser } from "./CodeAnalysis/Syntax/Parser";
+import { Expr } from "./CodeAnalysis/Syntax/Expression";
+import { Interpreter, RuntimeError } from "./CodeAnalysis/CodeGeneration/Interpreter";
 
 export class Ether {
+    private static readonly interpreter = new Interpreter;
     private static hadError = false;
+    private static hadRuntimeError = false;
 
     public static Main(args: string[]): void {
         if (args.length > 1) {
@@ -22,9 +25,9 @@ export class Ether {
             this.RunPrompt();
     }
 
-    public static Report(line: number, where: string, message: string): void {
-        error(`[line ${line}] Error${where}: ${message}`);
-        this.hadError = true;
+    public static RuntimeError(error: RuntimeError) {
+        log(error.message + `\n[line ${error.Token.Line}]`);
+        this.hadRuntimeError = true;
     }
 
     public static Error(tokenOrLine: Token | number, message: string): void {
@@ -35,6 +38,11 @@ export class Ether {
                 this.Report(tokenOrLine.Line, " at end", message);
             else
                 this.Report(tokenOrLine.Line, ` at '${tokenOrLine.Lexeme}'`, message);
+    }
+
+    public static Report(line: number, where: string, message: string): void {
+        error(`[line ${line}] Error${where}: ${message}`);
+        this.hadError = true;
     }
 
     public static RunPrompt(): void {
@@ -54,6 +62,9 @@ export class Ether {
 
         if (this.hadError)
             exit(65);
+
+        if (this.hadRuntimeError)
+            exit(70);
     }
 
     public static Run(sourceCode: string): void {
@@ -66,7 +77,6 @@ export class Ether {
         if (this.hadError)
             return;
 
-        const printer = new ASTPrinter;
-        printer.Print(expr);
+        this.interpreter.Interpret(expr as Expr.Base);
     }
 }

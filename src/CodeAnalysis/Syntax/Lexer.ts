@@ -1,5 +1,5 @@
-import { Ether } from "../Ether";
-import { SyntaxType } from "./Enumerations/SyntaxType";
+import { Ether } from "../../Ether";
+import { SyntaxType } from "./SyntaxType";
 import { Keywords } from "./Keywords";
 import { Token } from "./Token";
 
