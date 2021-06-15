@@ -6,7 +6,7 @@
   "scripts": {
     "start": "npm test && node dist/Main.js",
     "test": "tsc && npm i && mocha --exit",
-    "publish": "np --no-2fa"
+    "pub": "np --no-2fa"
   },
   "bin": "bin",
   "repository": {
