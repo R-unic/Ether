@@ -4,6 +4,7 @@ import { Expr } from "../Syntax/Expression";
 import { Stmt } from "../Syntax/Statement";
 import { SyntaxType as Syntax } from "../Syntax/SyntaxType";
 import { Token } from "../Syntax/Token";
+import { Environment } from "./Environment";
 
 export class RuntimeError extends EvalError {
     public constructor(
@@ -15,10 +16,16 @@ export class RuntimeError extends EvalError {
 }
 
 export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
-    public Interpret(statements: Stmt.Statement[]): void {
+    private environment = new Environment;
+
+    public Interpret(statements: Stmt.Statement[], repl: boolean): void {
         try {
             for(const statement of statements)
-                this.Execute(statement);
+                if (statement instanceof Stmt.Expression && repl === true) {
+                    const value: unknown = this.Evaluate(statement.Expression);
+                    log(this.Stringify(value));
+                } else
+                    this.Execute(statement);
         } catch (err) {
             Ether.RuntimeError(err as RuntimeError);
         }
@@ -32,14 +39,21 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
         stmt.Accept<void>(this);
     }
 
-    private Stringify(value: unknown): string {
-        if (value === null || value === undefined)
-            return "null";
+    private ExecuteBlock(statements: Stmt.Statement[], environment: Environment): void {
+        const previous: Environment = this.environment;
 
-        if (typeof value === "number")
-            return value.toString();
+        try {
+            this.environment = environment;
 
-        return value as string || (value as object).toString();
+            for (const statement of statements)
+                this.Execute(statement);
+        } finally {
+            this.environment = previous;
+        }
+    }
+
+    public VisitBlockStmt(stmt: Stmt.Block): void {
+        this.ExecuteBlock(stmt.Statements, new Environment(this.environment));
     }
 
     public VisitExpressionStmt(stmt: Stmt.Expression): void {
@@ -55,14 +69,38 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
         log(this.Stringify(value));
     }
 
-    public VisitBinary(expr: Expr.Binary): unknown {
+    public VisitVariableStmt(stmt: Stmt.Variable): void {
+        let value: unknown;
+        if (stmt.Initializer !== undefined)
+            value = this.Evaluate(stmt.Initializer);
+
+        this.environment.Define(stmt.Name.Lexeme, value);
+    }
+    
+    public VisitWhileStmt(stmt: Stmt.While): void {
+        throw new Error("Method not implemented.");
+    }
+
+    public VisitAssignExpr(expr: Expr.Assign): unknown {
+        const value: unknown = this.Evaluate(expr.Value);
+        this.environment.Assign(expr.Name, value);
+        return value;
+    }
+
+    public VisitVariableExpr(expr: Expr.Variable): unknown {
+        return this.environment.Get(expr.Name);
+    }
+
+    public VisitBinaryExpr(expr: Expr.Binary): unknown {
         const left: unknown = this.Evaluate(expr.Left);
         const right: unknown = this.Evaluate(expr.Right);
 
         switch (expr.Operator.Type) {
             case Syntax.AND: 
+                this.CheckBooleanOperands(expr.Operator, left, right);
                 return (left as boolean) && (right as boolean);
-            case Syntax.OR: 
+            case Syntax.OR:
+                this.CheckBooleanOperands(expr.Operator, left, right);
                 return (left as boolean) || (right as boolean);
 
             case Syntax.BANG_EQUAL: return !this.IsEqual(left, right);
@@ -109,15 +147,15 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
         return void 0;
     }
     
-    public VisitGrouping(expr: Expr.Grouping): unknown {
+    public VisitGroupingExpr(expr: Expr.Grouping): unknown {
         return expr.Expression;
     }
 
-    public VisitLiteral(expr: Expr.Literal): unknown {
+    public VisitLiteralExpr(expr: Expr.Literal): unknown {
         return expr.Value;
     }
 
-    public VisitUnary(expr: Expr.Unary): unknown {
+    public VisitUnaryExpr(expr: Expr.Unary): unknown {
         const right: unknown = this.Evaluate(expr.Right);
 
         switch (expr.Operator.Type) {
@@ -129,6 +167,30 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
         }
 
         return void 0;
+    }
+
+    private Stringify(value: unknown): string {
+        if (value === null || value === undefined)
+            return "null";
+
+        if (typeof value === "number")
+            return value.toString();
+
+        return value as string || (value as object).toString();
+    }
+
+    private CheckBooleanOperand(operator: Token, operand: unknown): void {
+        if (typeof operand === "boolean")
+            return;
+
+        throw new RuntimeError(operator, "Operand must be a boolean.");
+    }
+
+    private CheckBooleanOperands(operator: Token, left: unknown, right: unknown): void {
+        if (typeof left === "boolean" && typeof right === "boolean")
+            return;
+
+        throw new RuntimeError(operator, "Operands must be booleans.");
     }
 
     private CheckNumberOperand(operator: Token, operand: unknown): void {

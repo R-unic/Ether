@@ -6,10 +6,37 @@ export namespace Expr {
     }
 
     export interface Visitor<R> {
-        VisitBinary(expr: Binary): R;
-        VisitGrouping(expr: Grouping): R;
-        VisitLiteral(expr: Literal): R;
-        VisitUnary(expr: Unary): R;
+        VisitAssignExpr(expr: Assign): R
+        VisitBinaryExpr(expr: Binary): R;
+        VisitGroupingExpr(expr: Grouping): R;
+        VisitLiteralExpr(expr: Literal): R;
+        VisitUnaryExpr(expr: Unary): R;
+        VisitVariableExpr(expr: Variable): R;
+    }
+
+    export class Assign extends Expression {
+        public constructor(
+            public readonly Name: Token,
+            public readonly Value: Expression
+        ) {
+            super();
+        }
+
+        public Accept<R>(visitor: Visitor<R>): R {
+            return visitor.VisitAssignExpr(this);
+        }
+    }
+
+    export class Variable extends Expression {
+        public constructor(
+            public readonly Name: Token
+        ) {
+            super();
+        }
+
+        public Accept<R>(visitor: Visitor<R>): R {
+            return visitor.VisitVariableExpr(this);
+        }
     }
 
     export class Grouping extends Expression {
@@ -20,7 +47,7 @@ export namespace Expr {
         }
 
         public Accept<R>(visitor: Visitor<R>): R {
-            return visitor.VisitGrouping(this);
+            return visitor.VisitGroupingExpr(this);
         }
     }
 
@@ -32,7 +59,7 @@ export namespace Expr {
         }
 
         public Accept<R>(visitor: Visitor<R>): R {
-            return visitor.VisitLiteral(this);
+            return visitor.VisitLiteralExpr(this);
         }
     }
 
@@ -45,7 +72,7 @@ export namespace Expr {
         }
 
         public Accept<R>(visitor: Visitor<R>): R {
-            return visitor.VisitUnary(this);
+            return visitor.VisitUnaryExpr(this);
         }
     }
     
@@ -59,7 +86,7 @@ export namespace Expr {
         }
 
         public Accept<R>(visitor: Visitor<R>): R {
-            return visitor.VisitBinary(this);
+            return visitor.VisitBinaryExpr(this);
         }
     }
 }

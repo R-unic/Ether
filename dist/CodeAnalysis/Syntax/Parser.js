@@ -15,15 +15,36 @@ class Parser {
     Parse() {
         const statements = [];
         while (!this.Completed)
-            statements.push(this.Statement());
+            statements.push(this.Declaration());
         return statements;
     }
     Expression() {
-        return this.AndOr();
+        return this.Assignment();
+    }
+    Declaration() {
+        try {
+            if (this.Match(SyntaxType_1.SyntaxType.LET))
+                return this.VarDeclaration();
+            return this.Statement();
+        }
+        catch (err) {
+            this.Synchronize();
+            return undefined;
+        }
+    }
+    VarDeclaration() {
+        const name = this.Consume(SyntaxType_1.SyntaxType.IDENTIFIER, "Expected variable name.");
+        let initializer = this.Match(SyntaxType_1.SyntaxType.EQUAL) ?
+            this.Expression()
+            : undefined;
+        this.Consume(SyntaxType_1.SyntaxType.SEMICOLON, "Expected ';' after variable declaration.");
+        return new Statement_1.Stmt.Variable(name, initializer);
     }
     Statement() {
         if (this.Match(SyntaxType_1.SyntaxType.PRINT))
             return this.PrintStatement();
+        if (this.Match(SyntaxType_1.SyntaxType.LEFT_BRACE))
+            return new Statement_1.Stmt.Block(this.Block());
         return this.ExpressionStatement();
     }
     PrintStatement() {
@@ -35,6 +56,26 @@ class Parser {
         const expr = this.Expression();
         this.Consume(SyntaxType_1.SyntaxType.SEMICOLON, "Expected ';' after expression.");
         return new Statement_1.Stmt.Expression(expr);
+    }
+    Block() {
+        const statements = [];
+        while (!this.Check(SyntaxType_1.SyntaxType.RIGHT_BRACE) && !this.Completed)
+            statements.push(this.Declaration());
+        this.Consume(SyntaxType_1.SyntaxType.RIGHT_BRACE, "Expected '}' after block.");
+        return statements;
+    }
+    Assignment() {
+        const expr = this.AndOr();
+        if (this.Match(SyntaxType_1.SyntaxType.EQUAL)) {
+            const equals = this.Previous();
+            const value = this.Assignment();
+            if (expr instanceof Expression_1.Expr.Variable) {
+                const name = expr.Name;
+                return new Expression_1.Expr.Assign(name, value);
+            }
+            this.Error(equals, "Invalid assignment target.");
+        }
+        return expr;
     }
     AndOr() {
         let expr = this.Equality();
@@ -98,6 +139,8 @@ class Parser {
             return new Expression_1.Expr.Literal(undefined);
         if (this.Match(SyntaxType_1.SyntaxType.NUMBER, SyntaxType_1.SyntaxType.STRING))
             return new Expression_1.Expr.Literal(this.Previous().Literal);
+        if (this.Match(SyntaxType_1.SyntaxType.IDENTIFIER))
+            return new Expression_1.Expr.Variable(this.Previous());
         if (this.Match(SyntaxType_1.SyntaxType.LEFT_PAREN)) {
             const expr = this.Expression();
             this.Consume(SyntaxType_1.SyntaxType.RIGHT_PAREN, "Expected ')' after expression.");

@@ -3,7 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Interpreter = exports.RuntimeError = void 0;
 const console_1 = require("console");
 const Ether_1 = require("../../Ether");
+const Statement_1 = require("../Syntax/Statement");
 const SyntaxType_1 = require("../Syntax/SyntaxType");
+const Environment_1 = require("./Environment");
 class RuntimeError extends EvalError {
     constructor(Token, message) {
         super(message);
@@ -12,10 +14,18 @@ class RuntimeError extends EvalError {
 }
 exports.RuntimeError = RuntimeError;
 class Interpreter {
-    Interpret(statements) {
+    constructor() {
+        this.environment = new Environment_1.Environment;
+    }
+    Interpret(statements, repl) {
         try {
             for (const statement of statements)
-                this.Execute(statement);
+                if (statement instanceof Statement_1.Stmt.Expression && repl === true) {
+                    const value = this.Evaluate(statement.Expression);
+                    console_1.log(this.Stringify(value));
+                }
+                else
+                    this.Execute(statement);
         }
         catch (err) {
             Ether_1.Ether.RuntimeError(err);
@@ -27,12 +37,19 @@ class Interpreter {
     Execute(stmt) {
         stmt.Accept(this);
     }
-    Stringify(value) {
-        if (value === null || value === undefined)
-            return "null";
-        if (typeof value === "number")
-            return value.toString();
-        return String(value) || value || value.toString();
+    ExecuteBlock(statements, environment) {
+        const previous = this.environment;
+        try {
+            this.environment = environment;
+            for (const statement of statements)
+                this.Execute(statement);
+        }
+        finally {
+            this.environment = previous;
+        }
+    }
+    VisitBlockStmt(stmt) {
+        this.ExecuteBlock(stmt.Statements, new Environment_1.Environment(this.environment));
     }
     VisitExpressionStmt(stmt) {
         this.Evaluate(stmt.Expression);
@@ -44,13 +61,32 @@ class Interpreter {
         const value = this.Evaluate(stmt.Expression);
         console_1.log(this.Stringify(value));
     }
-    VisitBinary(expr) {
+    VisitVariableStmt(stmt) {
+        let value;
+        if (stmt.Initializer !== undefined)
+            value = this.Evaluate(stmt.Initializer);
+        this.environment.Define(stmt.Name.Lexeme, value);
+    }
+    VisitWhileStmt(stmt) {
+        throw new Error("Method not implemented.");
+    }
+    VisitAssignExpr(expr) {
+        const value = this.Evaluate(expr.Value);
+        this.environment.Assign(expr.Name, value);
+        return value;
+    }
+    VisitVariableExpr(expr) {
+        return this.environment.Get(expr.Name);
+    }
+    VisitBinaryExpr(expr) {
         const left = this.Evaluate(expr.Left);
         const right = this.Evaluate(expr.Right);
         switch (expr.Operator.Type) {
             case SyntaxType_1.SyntaxType.AND:
+                this.CheckBooleanOperands(expr.Operator, left, right);
                 return left && right;
             case SyntaxType_1.SyntaxType.OR:
+                this.CheckBooleanOperands(expr.Operator, left, right);
                 return left || right;
             case SyntaxType_1.SyntaxType.BANG_EQUAL: return !this.IsEqual(left, right);
             case SyntaxType_1.SyntaxType.EQUAL_EQUAL: return this.IsEqual(left, right);
@@ -90,13 +126,13 @@ class Interpreter {
         }
         return void 0;
     }
-    VisitGrouping(expr) {
+    VisitGroupingExpr(expr) {
         return expr.Expression;
     }
-    VisitLiteral(expr) {
+    VisitLiteralExpr(expr) {
         return expr.Value;
     }
-    VisitUnary(expr) {
+    VisitUnaryExpr(expr) {
         const right = this.Evaluate(expr.Right);
         switch (expr.Operator.Type) {
             case SyntaxType_1.SyntaxType.BANG:
@@ -106,6 +142,23 @@ class Interpreter {
                 return -right;
         }
         return void 0;
+    }
+    Stringify(value) {
+        if (value === null || value === undefined)
+            return "null";
+        if (typeof value === "number")
+            return value.toString();
+        return value || value.toString();
+    }
+    CheckBooleanOperand(operator, operand) {
+        if (typeof operand === "boolean")
+            return;
+        throw new RuntimeError(operator, "Operand must be a boolean.");
+    }
+    CheckBooleanOperands(operator, left, right) {
+        if (typeof left === "boolean" && typeof right === "boolean")
+            return;
+        throw new RuntimeError(operator, "Operands must be booleans.");
     }
     CheckNumberOperand(operator, operand) {
         if (typeof operand === "number")

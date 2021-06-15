@@ -21,7 +21,7 @@ class Ether {
             this.RunPrompt();
     }
     static RuntimeError(error) {
-        console_1.log(error.message + `\n[line ${error.Token.Line}]`);
+        console_1.log(`[line ${error.Token.Line}] RuntimeError: ${error.message}`);
         this.hadRuntimeError = true;
     }
     static Error(tokenOrLine, message) {
@@ -40,28 +40,28 @@ class Ether {
         Util_1.Input("Ether » ", line => {
             if (!line || line === "")
                 return;
-            this.Run(line);
+            this.Run(line, true);
             this.hadError = false;
             this.RunPrompt();
         });
     }
     static RunFile(path) {
         const fileContents = fs_1.readFileSync(path, "utf-8");
-        this.Run(fileContents);
+        this.Run(fileContents, false);
         if (this.hadError)
             process_1.exit(65);
         if (this.hadRuntimeError)
             process_1.exit(70);
         process_1.exit();
     }
-    static Run(sourceCode) {
+    static Run(sourceCode, repl) {
         const lexer = new Lexer_1.Lexer(sourceCode);
         const tokens = lexer.LexTokens();
         const parser = new Parser_1.Parser(tokens);
         const statements = parser.Parse();
         if (this.hadError)
             return;
-        this.interpreter.Interpret(statements);
+        this.interpreter.Interpret(statements, repl);
     }
 }
 exports.Ether = Ether;

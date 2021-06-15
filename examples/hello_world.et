@@ -1,5 +1,5 @@
-print "hello, world!";
+print "hello, world!"; ## Print all of this to standard output
 print "foo";
 print 'bar';
 print true & false != false | true;
-print "ether" + "\n" + "is cool";
+print "ether " + "is " + "cool";

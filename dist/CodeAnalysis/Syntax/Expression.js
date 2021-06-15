@@ -6,13 +6,34 @@ var Expr;
     class Expression {
     }
     Expr.Expression = Expression;
+    class Assign extends Expression {
+        constructor(Name, Value) {
+            super();
+            this.Name = Name;
+            this.Value = Value;
+        }
+        Accept(visitor) {
+            return visitor.VisitAssignExpr(this);
+        }
+    }
+    Expr.Assign = Assign;
+    class Variable extends Expression {
+        constructor(Name) {
+            super();
+            this.Name = Name;
+        }
+        Accept(visitor) {
+            return visitor.VisitVariableExpr(this);
+        }
+    }
+    Expr.Variable = Variable;
     class Grouping extends Expression {
         constructor(Expression) {
             super();
             this.Expression = Expression;
         }
         Accept(visitor) {
-            return visitor.VisitGrouping(this);
+            return visitor.VisitGroupingExpr(this);
         }
     }
     Expr.Grouping = Grouping;
@@ -22,7 +43,7 @@ var Expr;
             this.Value = Value;
         }
         Accept(visitor) {
-            return visitor.VisitLiteral(this);
+            return visitor.VisitLiteralExpr(this);
         }
     }
     Expr.Literal = Literal;
@@ -33,7 +54,7 @@ var Expr;
             this.Right = Right;
         }
         Accept(visitor) {
-            return visitor.VisitUnary(this);
+            return visitor.VisitUnaryExpr(this);
         }
     }
     Expr.Unary = Unary;
@@ -45,7 +66,7 @@ var Expr;
             this.Right = Right;
         }
         Accept(visitor) {
-            return visitor.VisitBinary(this);
+            return visitor.VisitBinaryExpr(this);
         }
     }
     Expr.Binary = Binary;
