@@ -2,7 +2,7 @@ import { Expr } from "../CodeAnalysis/Syntax/Expression";
 import { StringBuilder } from "./StringBuilder";
 
 export class ASTPrinter implements Expr.Visitor<string> {
-    public Print(expr?: Expr.Base): void {
+    public Print(expr?: Expr.Expression): void {
         const tree: string = expr?.Accept<string>(this)?? "null";
         console.log(tree);
     }
@@ -26,7 +26,7 @@ export class ASTPrinter implements Expr.Visitor<string> {
         return this.Parenthesize(expr.Operator.Lexeme, expr.Right);
     }
 
-    private Parenthesize(name: string, ...exprs: Expr.Base[]): string {
+    private Parenthesize(name: string, ...exprs: Expr.Expression[]): string {
         const builder = new StringBuilder;
 
         builder.Append("(").Append(name);

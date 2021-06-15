@@ -12,21 +12,37 @@ class RuntimeError extends EvalError {
 }
 exports.RuntimeError = RuntimeError;
 class Interpreter {
-    Interpret(expression) {
+    Interpret(statements) {
         try {
-            const value = this.Evaluate(expression);
-            console_1.log(this.Stringify(value));
+            for (const statement of statements)
+                this.Execute(statement);
         }
         catch (err) {
             Ether_1.Ether.RuntimeError(err);
         }
+    }
+    Evaluate(expr) {
+        return expr.Accept(this);
+    }
+    Execute(stmt) {
+        stmt.Accept(this);
     }
     Stringify(value) {
         if (value === null || value === undefined)
             return "null";
         if (typeof value === "number")
             return value.toString();
-        return value.toString() || value;
+        return value || value.toString();
+    }
+    VisitExpressionStmt(stmt) {
+        this.Evaluate(stmt.Expression);
+    }
+    VisitIfStmt(stmt) {
+        throw new Error("Method not implemented.");
+    }
+    VisitPrintStmt(stmt) {
+        const value = this.Evaluate(stmt.Expression);
+        console_1.log(this.Stringify(value));
     }
     VisitBinary(expr) {
         const left = this.Evaluate(expr.Left);
@@ -110,9 +126,6 @@ class Interpreter {
         if (a === null || a === undefined)
             return false;
         return a === b;
-    }
-    Evaluate(expr) {
-        return expr.Accept(this);
     }
 }
 exports.Interpreter = Interpreter;

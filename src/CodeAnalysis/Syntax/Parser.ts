@@ -1,9 +1,10 @@
 import { Ether } from "../../Ether";
-import { SyntaxType } from "../Syntax/SyntaxType";
+import { SyntaxType as Syntax } from "../Syntax/SyntaxType";
 import { Expr } from "./Expression";
+import { Stmt } from "./Statement";
 import { Token } from "./Token";
 
-class ParserError extends SyntaxError {}
+class ParserError {}
 
 export class Parser {
     private current = 0;
@@ -12,99 +13,120 @@ export class Parser {
         private readonly tokens: Token[]
     ) {}
 
-    public Parse(): Expr.Base | undefined {
-        try {
-            return this.Expression();
-        } catch (err) {
-            return undefined;
-        }
+    public Parse(): Stmt.Statement[] {
+        const statements: Stmt.Statement[] = [];
+        while (!this.Completed)
+            statements.push(this.Statement());
+
+        return statements;
     }
 
-    public Expression(): Expr.Base {
+    public Expression(): Expr.Expression {
         return this.Equality();
     }
 
-    private Equality(): Expr.Base {
-        let expr: Expr.Base = this.Comparison();
+    public Statement(): Stmt.Statement {
+        if (this.Match(Syntax.PRINT))
+            return this.PrintStatement();
 
-        while (this.Match(SyntaxType.BANG_EQUAL, SyntaxType.EQUAL_EQUAL)) {
+        return this.ExpressionStatement();
+    }
+
+    private PrintStatement(): Stmt.Print {
+        const value: Expr.Expression = this.Expression();
+        this.Consume(Syntax.SEMICOLON, "Expected ';' after value.");
+        return new Stmt.Print(value);
+    }
+
+    private ExpressionStatement(): Stmt.Expression {
+        const expr: Expr.Expression = this.Expression();
+        this.Consume(Syntax.SEMICOLON, "Expected ';' after expression.");
+        return new Stmt.Expression(expr);
+    }
+ 
+    private Equality(): Expr.Expression {
+        let expr: Expr.Expression = this.Comparison();
+
+        while (this.Match(Syntax.BANG_EQUAL, Syntax.EQUAL_EQUAL)) {
             const operator: Token = this.Previous();
-            const right: Expr.Base = this.Comparison();
+            const right: Expr.Expression = this.Comparison();
             expr = new Expr.Binary(expr, operator, right);
         }
 
         return expr;
     }
 
-    private Comparison(): Expr.Base {
-        let expr: Expr.Base = this.Term();
+    private Comparison(): Expr.Expression {
+        let expr: Expr.Expression = this.Term();
 
-        while (this.Match(SyntaxType.GREATER, SyntaxType.GREATER_EQUAL, SyntaxType.LESS, SyntaxType.LESS_EQUAL)) {
+        while (this.Match(Syntax.GREATER, Syntax.GREATER_EQUAL, Syntax.LESS, Syntax.LESS_EQUAL)) {
             const operator: Token = this.Previous();
-            const right: Expr.Base = this.Term();
+            const right: Expr.Expression = this.Term();
             expr = new Expr.Binary(expr, operator, right);
         }
 
         return expr;
     }
 
-    private Term(): Expr.Base {
-        let expr: Expr.Base = this.Factor();
+    private Term(): Expr.Expression {
+        let expr: Expr.Expression = this.Factor();
 
-        while(this.Match(SyntaxType.MINUS, SyntaxType.PLUS)) {
+        while(this.Match(Syntax.MINUS, Syntax.PLUS)) {
             const operator: Token = this.Previous();
-            const right: Expr.Base = this.Factor();
+            const right: Expr.Expression = this.Factor();
             expr = new Expr.Binary(expr, operator, right);
         }
 
         return expr;
     }
 
-    private Factor(): Expr.Base {
-        let expr: Expr.Base = this.Unary();
+    private Factor(): Expr.Expression {
+        let expr: Expr.Expression = this.Unary();
 
-        while(this.Match(SyntaxType.SLASH, SyntaxType.STAR, SyntaxType.CARAT, SyntaxType.PERCENT)) {
+        while(this.Match(Syntax.SLASH, Syntax.STAR, Syntax.CARAT, Syntax.PERCENT)) {
             const operator: Token = this.Previous();
-            const right: Expr.Base = this.Unary();
+            const right: Expr.Expression = this.Unary();
             expr = new Expr.Binary(expr, operator, right);
         }
 
         return expr;
     }
 
-    private Unary(): Expr.Base {
-        while(this.Match(SyntaxType.BANG, SyntaxType.MINUS)) {
+    private Unary(): Expr.Expression {
+        while(this.Match(Syntax.BANG, Syntax.MINUS)) {
             const operator: Token = this.Previous();
-            const right: Expr.Base = this.Unary();
+            const right: Expr.Expression = this.Unary();
             return new Expr.Unary(operator, right);
         }
 
         return this.Primary();
     }
 
-    private Primary(): Expr.Base {
-        if (this.Match(SyntaxType.FALSE))
+    private Primary(): Expr.Expression {
+        if (this.Match(Syntax.FALSE))
             return new Expr.Literal(false);
 
-        if (this.Match(SyntaxType.TRUE))
+        if (this.Match(Syntax.TRUE))
             return new Expr.Literal(true);
 
-        if (this.Match(SyntaxType.NULL))
+        if (this.Match(Syntax.NULL))
             return new Expr.Literal(undefined);
 
-        if (this.Match(SyntaxType.NUMBER, SyntaxType.STRING))
+        if (this.Match(Syntax.NUMBER, Syntax.STRING))
             return new Expr.Literal(this.Previous().Literal);
 
-        if (this.Match(SyntaxType.LEFT_PAREN)) {
-            const expr: Expr.Base = this.Expression();
-            this.Consume(SyntaxType.RIGHT_PAREN, "Expected ')' after expression.");
+        if (this.Match(Syntax.LEFT_PAREN)) {
+            const expr: Expr.Expression = this.Expression();
+            this.Consume(Syntax.RIGHT_PAREN, "Expected ')' after expression.");
             return new Expr.Grouping(expr);
         }
 
+        console.log(this.Peek(), this.Previous(), this.Peek(1));
+        
         throw this.Error(this.Peek(), "Expected expression.");
     }
 
-    private Match(...types: SyntaxType[]): boolean {
+    private Match(...types: Syntax[]): boolean {
         for (const type of types) {
             if (this.Check(type)) {
                 this.Advance();
@@ -114,7 +136,7 @@ export class Parser {
         return false;
     }
 
-    private Check(type: SyntaxType): boolean {
+    private Check(type: Syntax): boolean {
         if (this.Completed)
             return false;
         return this.Peek().Type === type;
@@ -127,7 +149,7 @@ export class Parser {
     }
 
     private get Completed() {
-        return this.Peek().Type === SyntaxType.EOF;
+        return this.Peek().Type === Syntax.EOF;
     }
 
     private Peek(offset: number = 0): Token {
@@ -138,7 +160,7 @@ export class Parser {
         return this.Peek(-1);
     }
 
-    private Consume(type: SyntaxType, message: string): Token {
+    private Consume(type: Syntax, message: string): Token {
         if (this.Check(type))
             return this.Advance();
 
@@ -154,18 +176,18 @@ export class Parser {
         this.Advance();
 
         while (!this.Completed) {
-            if (this.Previous().Type === SyntaxType.SEMICOLON)
+            if (this.Previous().Type === Syntax.SEMICOLON)
                 return;
 
             switch (this.Peek().Type) {
-                case SyntaxType.CLASS:
-                case SyntaxType.METHOD:
-                case SyntaxType.LET:
-                case SyntaxType.FOR:
-                case SyntaxType.IF:
-                case SyntaxType.WHILE:
-                case SyntaxType.PRINT:
-                case SyntaxType.RETURN:
+                case Syntax.CLASS:
+                case Syntax.METHOD:
+                case Syntax.LET:
+                case Syntax.FOR:
+                case Syntax.IF:
+                case Syntax.WHILE:
+                case Syntax.PRINT:
+                case Syntax.RETURN:
                     return;
             }
 

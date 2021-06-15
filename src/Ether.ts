@@ -2,13 +2,12 @@ import { error, log } from "console";
 import { readFileSync } from "fs";
 import { exit } from "process";
 import { Input } from "./Util";
-import { ASTPrinter } from "./Utility/ASTPrinter";
 import { Lexer } from "./CodeAnalysis/Syntax/Lexer";
 import { Token } from "./CodeAnalysis/Syntax/Token";
 import { SyntaxType } from "./CodeAnalysis/Syntax/SyntaxType";
 import { Parser } from "./CodeAnalysis/Syntax/Parser";
-import { Expr } from "./CodeAnalysis/Syntax/Expression";
-import { Interpreter, RuntimeError } from "./CodeAnalysis/CodeGeneration/Interpreter";
+import { Interpreter, RuntimeError } from "./CodeAnalysis/Runtime/Interpreter";
+import { Stmt } from "./CodeAnalysis/Syntax/Statement";
 
 export class Ether {
     private static readonly interpreter = new Interpreter;
@@ -69,14 +68,14 @@ export class Ether {
 
     public static Run(sourceCode: string): void {
         const lexer = new Lexer(sourceCode);
-        const tokens: Token[] = lexer.ScanTokens();
+        const tokens: Token[] = lexer.LexTokens();
 
         const parser = new Parser(tokens);
-        const expr: Expr.Base | undefined = parser.Parse();
+        const statements: Stmt.Statement[] = parser.Parse();
 
         if (this.hadError)
             return;
 
-        this.interpreter.Interpret(expr as Expr.Base);
+        this.interpreter.Interpret(statements);
     }
 }

@@ -13,7 +13,7 @@
   },
   "mocha": {
     "file": [
-      "dist/Testing/Lexer/Lexer_LexesTokens.js"
+      "dist/Testing/Lexer_LexesTokens.js"
     ]
   },
   "keywords": [

@@ -3,10 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Expr = void 0;
 var Expr;
 (function (Expr) {
-    class Base {
+    class Expression {
     }
-    Expr.Base = Base;
-    class Grouping extends Base {
+    Expr.Expression = Expression;
+    class Grouping extends Expression {
         constructor(Expression) {
             super();
             this.Expression = Expression;
@@ -16,7 +16,7 @@ var Expr;
         }
     }
     Expr.Grouping = Grouping;
-    class Literal extends Base {
+    class Literal extends Expression {
         constructor(Value) {
             super();
             this.Value = Value;
@@ -26,7 +26,7 @@ var Expr;
         }
     }
     Expr.Literal = Literal;
-    class Unary extends Base {
+    class Unary extends Expression {
         constructor(Operator, Right) {
             super();
             this.Operator = Operator;
@@ -37,7 +37,7 @@ var Expr;
         }
     }
     Expr.Unary = Unary;
-    class Binary extends Base {
+    class Binary extends Expression {
         constructor(Left, Operator, Right) {
             super();
             this.Left = Left;

@@ -4,7 +4,8 @@ exports.Parser = void 0;
 const Ether_1 = require("../../Ether");
 const SyntaxType_1 = require("../Syntax/SyntaxType");
 const Expression_1 = require("./Expression");
-class ParserError extends SyntaxError {
+const Statement_1 = require("./Statement");
+class ParserError {
 }
 class Parser {
     constructor(tokens) {
@@ -12,15 +13,28 @@ class Parser {
         this.current = 0;
     }
     Parse() {
-        try {
-            return this.Expression();
-        }
-        catch (err) {
-            return undefined;
-        }
+        const statements = [];
+        while (!this.Completed)
+            statements.push(this.Statement());
+        return statements;
     }
     Expression() {
         return this.Equality();
+    }
+    Statement() {
+        if (this.Match(SyntaxType_1.SyntaxType.PRINT))
+            return this.PrintStatement();
+        return this.ExpressionStatement();
+    }
+    PrintStatement() {
+        const value = this.Expression();
+        this.Consume(SyntaxType_1.SyntaxType.SEMICOLON, "Expected ';' after value.");
+        return new Statement_1.Stmt.Print(value);
+    }
+    ExpressionStatement() {
+        const expr = this.Expression();
+        this.Consume(SyntaxType_1.SyntaxType.SEMICOLON, "Expected ';' after expression.");
+        return new Statement_1.Stmt.Expression(expr);
     }
     Equality() {
         let expr = this.Comparison();
@@ -80,6 +94,7 @@ class Parser {
             this.Consume(SyntaxType_1.SyntaxType.RIGHT_PAREN, "Expected ')' after expression.");
             return new Expression_1.Expr.Grouping(expr);
         }
+        console.log(this.Peek(), this.Previous(), this.Peek(1));
         throw this.Error(this.Peek(), "Expected expression.");
     }
     Match(...types) {

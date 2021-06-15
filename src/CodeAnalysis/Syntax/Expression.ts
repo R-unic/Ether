@@ -1,20 +1,20 @@
 import { Token } from "./Token";
 
 export namespace Expr {
-    export abstract class Base {
+    export abstract class Expression {
         abstract Accept<R>(visitor: Visitor<R>): R
     }
 
     export interface Visitor<R> {
-        VisitBinary(expr: Binary): R
-        VisitGrouping(expr: Grouping): R
-        VisitLiteral(expr: Literal): R
-        VisitUnary(expr: Unary): R
+        VisitBinary(expr: Binary): R;
+        VisitGrouping(expr: Grouping): R;
+        VisitLiteral(expr: Literal): R;
+        VisitUnary(expr: Unary): R;
     }
 
-    export class Grouping extends Base {
+    export class Grouping extends Expression {
         public constructor(
-            public readonly Expression: Base
+            public readonly Expression: Expression
         ) {
             super();
         }
@@ -24,7 +24,7 @@ export namespace Expr {
         }
     }
 
-    export class Literal extends Base {
+    export class Literal extends Expression {
         public constructor(
             public readonly Value: unknown
         ) {
@@ -36,10 +36,10 @@ export namespace Expr {
         }
     }
 
-    export class Unary extends Base {
+    export class Unary extends Expression {
         public constructor(
             public readonly Operator: Token,
-            public readonly Right: Base
+            public readonly Right: Expression
         ) {
             super();
         }
@@ -49,11 +49,11 @@ export namespace Expr {
         }
     }
     
-    export class Binary extends Base {
+    export class Binary extends Expression {
         public constructor(
-            public readonly Left: Base,
+            public readonly Left: Expression,
             public readonly Operator: Token,
-            public readonly Right: Base
+            public readonly Right: Expression
         ) {
             super();
         }

@@ -1,6 +1,7 @@
 import { log } from "console";
 import { Ether } from "../../Ether";
 import { Expr } from "../Syntax/Expression";
+import { Stmt } from "../Syntax/Statement";
 import { SyntaxType } from "../Syntax/SyntaxType";
 import { Token } from "../Syntax/Token";
 
@@ -13,14 +14,22 @@ export class RuntimeError extends EvalError {
     }
 }
 
-export class Interpreter implements Expr.Visitor<unknown> {
-    public Interpret(expression: Expr.Base): void {
+export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
+    public Interpret(statements: Stmt.Statement[]): void {
         try {
-            const value: unknown = this.Evaluate(expression);
-            log(this.Stringify(value))
+            for(const statement of statements)
+                this.Execute(statement);
         } catch (err) {
             Ether.RuntimeError(err as RuntimeError);
         }
+    }
+
+    private Evaluate(expr: Expr.Expression): unknown {
+        return expr.Accept<unknown>(this);
+    }
+
+    private Execute(stmt: Stmt.Statement): void {
+        stmt.Accept<void>(this);
     }
 
     private Stringify(value: unknown): string {
@@ -30,7 +39,20 @@ export class Interpreter implements Expr.Visitor<unknown> {
         if (typeof value === "number")
             return value.toString();
 
-        return (value as object).toString() || value as string;
+        return value as string || (value as object).toString();
+    }
+
+    public VisitExpressionStmt(stmt: Stmt.Expression): void {
+        this.Evaluate(stmt.Expression);
+    }
+
+    public VisitIfStmt(stmt: Stmt.If): void {
+        throw new Error("Method not implemented.");
+    }
+
+    public VisitPrintStmt(stmt: Stmt.Print): void {
+        const value: unknown = this.Evaluate(stmt.Expression);
+        log(this.Stringify(value));
     }
 
     public VisitBinary(expr: Expr.Binary): unknown {
@@ -82,7 +104,6 @@ export class Interpreter implements Expr.Visitor<unknown> {
         return void 0;
     }
     
-
     public VisitGrouping(expr: Expr.Grouping): unknown {
         return expr.Expression;
     }
@@ -129,7 +150,7 @@ export class Interpreter implements Expr.Visitor<unknown> {
         return true;
     }
 
-    public IsEqual(a: unknown, b: unknown): boolean {
+    private IsEqual(a: unknown, b: unknown): boolean {
         if ((a === null || a === undefined) || (b === null || b === undefined))
             return true;
 
@@ -137,9 +158,5 @@ export class Interpreter implements Expr.Visitor<unknown> {
             return false;
 
         return a === b;
-    }
-
-    private Evaluate(expr: Expr.Base): unknown {
-        return expr.Accept<unknown>(this);
     }
 }

@@ -8,7 +8,7 @@ const Util_1 = require("./Util");
 const Lexer_1 = require("./CodeAnalysis/Syntax/Lexer");
 const SyntaxType_1 = require("./CodeAnalysis/Syntax/SyntaxType");
 const Parser_1 = require("./CodeAnalysis/Syntax/Parser");
-const Interpreter_1 = require("./CodeAnalysis/CodeGeneration/Interpreter");
+const Interpreter_1 = require("./CodeAnalysis/Runtime/Interpreter");
 class Ether {
     static Main(args) {
         if (args.length > 1) {
@@ -55,12 +55,12 @@ class Ether {
     }
     static Run(sourceCode) {
         const lexer = new Lexer_1.Lexer(sourceCode);
-        const tokens = lexer.ScanTokens();
+        const tokens = lexer.LexTokens();
         const parser = new Parser_1.Parser(tokens);
-        const expr = parser.Parse();
+        const statements = parser.Parse();
         if (this.hadError)
             return;
-        this.interpreter.Interpret(expr);
+        this.interpreter.Interpret(statements);
     }
 }
 exports.Ether = Ether;

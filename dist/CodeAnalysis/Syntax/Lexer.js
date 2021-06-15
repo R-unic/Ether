@@ -11,22 +11,22 @@ class Lexer {
         this.tokens = [];
         this.start = 0;
         this.current = 0;
-        this.line = 0;
+        this.line = 1;
     }
     get Completed() {
         return this.current >= this.source.length;
     }
-    ScanTokens() {
+    LexTokens() {
         while (!this.Completed) {
             this.start = this.current;
-            this.ScanToken();
+            this.Lex();
         }
         this.tokens.push(new Token_1.Token(SyntaxType_1.SyntaxType.EOF, "", null, this.line));
         return this.tokens;
     }
-    ScanToken() {
-        const c = this.Advance();
-        switch (c) {
+    Lex() {
+        const char = this.Advance();
+        switch (char) {
             case "(":
                 this.AddToken(SyntaxType_1.SyntaxType.LEFT_PAREN);
                 break;
@@ -68,8 +68,7 @@ class Lexer {
                 break;
             case "#":
                 if (this.Match("#"))
-                    while (this.Peek() !== '\n' && !this.Completed)
-                        this.Advance();
+                    this.SkipComment();
                 else
                     this.AddToken(SyntaxType_1.SyntaxType.HASHTAG);
                 break;
@@ -92,6 +91,7 @@ class Lexer {
             case '\n':
                 this.line++;
                 break;
+            case "'":
             case '"':
                 this.String();
                 break;
@@ -102,20 +102,24 @@ class Lexer {
                 this.AddToken(SyntaxType_1.SyntaxType.AND);
                 break;
             default:
-                if (this.IsDigit(c))
+                if (this.IsDigit(char))
                     this.Number();
-                else if (this.IsAlpha(c))
+                else if (this.IsAlpha(char))
                     this.Identifier();
                 else
                     Ether_1.Ether.Error(this.line, "Unexpected character.");
                 break;
         }
     }
+    SkipComment() {
+        while (this.Peek() !== "\n" && !this.Completed)
+            this.Advance();
+    }
     Advance() {
         return this.source.charAt(this.current++);
     }
     AddToken(type, literal = null) {
-        const text = this.source.substring(this.start, this.current);
+        const text = this.source.substring(this.start, this.current).trim();
         this.tokens.push(new Token_1.Token(type, text, literal, this.line));
     }
     Match(expected) {
@@ -142,18 +146,18 @@ class Lexer {
         return !isNaN(Number(c));
     }
     IsAlphaNumeric(c) {
-        return this.IsAlpha(c) || this.IsDigit(c);
+        return c === " " ? false : this.IsAlpha(c) || this.IsDigit(c);
     }
     Identifier() {
         var _a;
         while (this.IsAlphaNumeric(this.Peek()))
             this.Advance();
-        const text = this.source.substring(this.start, this.current);
+        const text = this.source.substring(this.start, this.current).trim();
         let type = (_a = Keywords_1.Keywords.get(text)) !== null && _a !== void 0 ? _a : SyntaxType_1.SyntaxType.IDENTIFIER;
         this.AddToken(type);
     }
     String() {
-        while (this.Peek() !== '"' && !this.Completed) {
+        while ((this.Peek() !== '"' && this.Peek() !== "'") && !this.Completed) {
             if (this.Peek() === "\n")
                 this.line++;
             this.Advance();
@@ -174,7 +178,7 @@ class Lexer {
             while (this.IsDigit(this.Peek()))
                 this.Advance();
         }
-        this.AddToken(SyntaxType_1.SyntaxType.NUMBER, parseFloat(this.source.substring(this.start, this.current)));
+        this.AddToken(SyntaxType_1.SyntaxType.NUMBER, Number(this.source.substring(this.start, this.current)));
     }
 }
 exports.Lexer = Lexer;
