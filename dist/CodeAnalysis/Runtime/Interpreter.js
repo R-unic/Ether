@@ -16,7 +16,6 @@ const Wait_1 = require("./Lib/Wait");
 const Warn_1 = require("./Lib/Warn");
 const Method_1 = require("./Method");
 const Resolver_1 = require("./Resolver");
-const StringBuilder_1 = require("../../Utility/StringBuilder");
 class RuntimeError extends EvalError {
     constructor(Token, message) {
         super(message);
@@ -301,8 +300,6 @@ class Interpreter {
             return safe_1.cyan(strValue);
         if (value instanceof Error)
             return safe_1.red(strValue);
-        if (value instanceof Array)
-            return safe_1.yellow(strValue);
         switch (typeof value) {
             case "boolean":
                 return safe_1.yellow(strValue);
@@ -322,13 +319,6 @@ class Interpreter {
             return value.toString();
         if (value.ToString !== undefined)
             return value.ToString();
-        if (value instanceof Array) {
-            const arrStr = new StringBuilder_1.StringBuilder;
-            arrStr.Append("[ ");
-            for (const v of value)
-                arrStr.Append(this.GetStyling(v));
-            arrStr.Append(" ]");
-        }
         return value.toString() || value;
     }
     CheckNumberOperand(operator, operand) {
