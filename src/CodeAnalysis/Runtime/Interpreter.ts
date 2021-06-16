@@ -274,8 +274,8 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
         if (typeof value === "number")
             return value.toString();
 
-        // if (value instanceof Callable)
-        //     return value.ToString();
+        if ((value as any).ToString !== undefined)
+            return (value as any).ToString();
 
         return (value as object).toString() || value as string;
     }

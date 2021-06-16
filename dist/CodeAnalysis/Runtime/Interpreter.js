@@ -223,8 +223,8 @@ class Interpreter {
             return value;
         if (typeof value === "number")
             return value.toString();
-        // if (value instanceof Callable)
-        //     return value.ToString();
+        if (value.ToString !== undefined)
+            return value.ToString();
         return value.toString() || value;
     }
     CheckNumberOperand(operator, operand) {

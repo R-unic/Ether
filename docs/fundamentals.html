@@ -1,0 +1,57 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="styles.css">
+    </head>
+    <body>
+        <h1>Fundamentals</h1>
+        <p>
+            Ether is a high-level dynamically-typed interpreter. It has C-style syntax.
+            <br>
+            Some basic fundamental concepts in Ether include:
+        </p>
+        <code>
+            <span class="k">print</span> <span class="s">"Hello, world!"</span>;
+            <br>
+            <br>
+            <span class="k">let</span> <span class="i">foo</span> = <span class="s">"bar"</span>;
+            <br>
+            <span class="k">for</span> (<span class="k">let</span> <span class="i">i</span> = <span class="n">0</span>; <span class="i">i</span> &lt; <span class="n">10</span>; <span class="i">i</span>++)
+            <br>
+            &nbsp;&nbsp;<span class="i">foo</span> = <span class="i">foo</span> + <span class="s">" bar"</span>;
+            <br>
+            <br>
+            <span class="k">let</span> <span class="i">count</span> = <span class="n">0</span>;
+            <br>
+            <span class="k">while</span> (<span class="b">true</span>) {
+            <br>
+            &nbsp;&nbsp;<span class="i">count</span> = <span class="i">count</span> + <span class="n">1</span>;
+            <br>
+            &nbsp;&nbsp;<span class="k">if</span> (<span class="i">count</span> == <span class="n">10</span>)
+            <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="k">break</span>;
+            <br>
+            }
+            <br>
+            <br>
+            <span class="k">if</span> (<span class="i">count</span> != <span class="n">10</span>)
+            <br>
+            &nbsp;&nbsp;<span class="k">raise</span> <span class="s">"Something went very wrong."</span>;
+            <br>
+            <span class="k">else</span>
+            <br>
+            &nbsp;&nbsp;<span class="k">print</span> <span class="s">"Everything is normal."</span>;
+            <br>
+            <br>
+            <span class="k">method</span> <span class="i">sayHello</span>(<span class="p">name</span>) {
+            <br>
+            &nbsp;&nbsp;<span class="k">print</span> <span class="s">"Hello, "</span> + <span class="s">name</span> <span class="s">"."</span>;
+            <br>
+            }
+            <br>
+            <br>
+            <span class="i">sayHello</span>(<span class="s">"world"</span>);
+            <br>
+            <span class="i">sayHello</span>(<span class="s">"Jane"</span>);
+        </code>
+    </body>
+</html>
