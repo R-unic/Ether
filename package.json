@@ -1,6 +1,6 @@
 {
   "name": "ether-lang",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "An interpreter",
   "main": "dist/Main.js",
   "scripts": {
