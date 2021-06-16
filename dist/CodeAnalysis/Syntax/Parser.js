@@ -4,13 +4,15 @@ exports.Parser = void 0;
 const Ether_1 = require("../../Ether");
 const SyntaxType_1 = require("../Syntax/SyntaxType");
 const Expression_1 = require("./Expression");
+const Lexer_1 = require("./Lexer");
 const Statement_1 = require("./Statement");
 class ParserError {
 }
 class Parser {
-    constructor(tokens) {
-        this.tokens = tokens;
+    constructor(sourceCode) {
         this.current = 0;
+        this.Lexer = new Lexer_1.Lexer(sourceCode);
+        this.tokens = this.Lexer.LexTokens();
     }
     Parse() {
         const statements = [];
@@ -25,7 +27,9 @@ class Parser {
         try {
             if (this.Match(SyntaxType_1.SyntaxType.METHOD))
                 return this.Method("method");
-            if (this.Match(SyntaxType_1.SyntaxType.LET))
+            if (this.Match(SyntaxType_1.SyntaxType.GLOBAL))
+                return this.GlobalVarDeclaration();
+            if (this.Match(SyntaxType_1.SyntaxType.LOCAL))
                 return this.VarDeclaration();
             return this.Statement();
         }
@@ -33,6 +37,14 @@ class Parser {
             this.Synchronize();
             return undefined;
         }
+    }
+    GlobalVarDeclaration() {
+        const name = this.Consume(SyntaxType_1.SyntaxType.IDENTIFIER, "Expected variable name.");
+        let initializer = this.Match(SyntaxType_1.SyntaxType.EQUAL) ?
+            this.Expression()
+            : undefined;
+        this.Consume(SyntaxType_1.SyntaxType.SEMICOLON, "Expected ';' after variable declaration.");
+        return new Statement_1.Stmt.Global(name, initializer);
     }
     VarDeclaration() {
         const name = this.Consume(SyntaxType_1.SyntaxType.IDENTIFIER, "Expected variable name.");
@@ -92,7 +104,7 @@ class Parser {
         let initializer;
         if (this.Match(SyntaxType_1.SyntaxType.SEMICOLON))
             initializer = undefined;
-        else if (this.Match(SyntaxType_1.SyntaxType.LET))
+        else if (this.Match(SyntaxType_1.SyntaxType.LOCAL))
             initializer = this.VarDeclaration();
         else
             initializer = this.ExpressionStatement();
@@ -149,14 +161,15 @@ class Parser {
         return statements;
     }
     Assignment() {
-        const expr = this.Or();
+        const expr = this.CompoundAssignment();
         if (this.Match(SyntaxType_1.SyntaxType.EQUAL)) {
+            const scopeIdentifier = this.Peek(-2);
             const equals = this.Previous();
             const value = this.Assignment();
             if (expr instanceof Expression_1.Expr.Variable) {
                 const varExpr = expr;
                 const name = varExpr.Name;
-                return new Expression_1.Expr.Assign(name, value);
+                return new Expression_1.Expr.Assign(name, value, scopeIdentifier.Lexeme === "global" ? true : false);
             }
             this.Error(equals, "Invalid assignment target.");
         }
@@ -208,8 +221,17 @@ class Parser {
         return expr;
     }
     Factor() {
+        let expr = this.Coefficient();
+        while (this.Match(SyntaxType_1.SyntaxType.SLASH, SyntaxType_1.SyntaxType.STAR, SyntaxType_1.SyntaxType.PERCENT)) {
+            const operator = this.Previous();
+            const right = this.Coefficient();
+            expr = new Expression_1.Expr.Binary(expr, operator, right);
+        }
+        return expr;
+    }
+    Coefficient() {
         let expr = this.Unary();
-        while (this.Match(SyntaxType_1.SyntaxType.SLASH, SyntaxType_1.SyntaxType.STAR, SyntaxType_1.SyntaxType.CARAT, SyntaxType_1.SyntaxType.PERCENT)) {
+        while (this.Match(SyntaxType_1.SyntaxType.CARAT)) {
             const operator = this.Previous();
             const right = this.Unary();
             expr = new Expression_1.Expr.Binary(expr, operator, right);
@@ -217,7 +239,7 @@ class Parser {
         return expr;
     }
     Unary() {
-        while (this.Match(SyntaxType_1.SyntaxType.BANG, SyntaxType_1.SyntaxType.MINUS)) {
+        while (this.Match(SyntaxType_1.SyntaxType.BANG, SyntaxType_1.SyntaxType.MINUS, SyntaxType_1.SyntaxType.PLUS)) {
             const operator = this.Previous();
             const right = this.Unary();
             return new Expression_1.Expr.Unary(operator, right);
@@ -243,6 +265,33 @@ class Parser {
             } while (this.Match(SyntaxType_1.SyntaxType.COMMA));
         const paren = this.Consume(SyntaxType_1.SyntaxType.RIGHT_PAREN, "Expected ')' after argument list.");
         return new Expression_1.Expr.Call(callee, paren, args);
+    }
+    CompoundAssignment() {
+        let expr = this.CompoundAssignFactor();
+        while (this.Match(SyntaxType_1.SyntaxType.PLUS_EQUAL, SyntaxType_1.SyntaxType.MINUS_EQUAL)) {
+            const operator = this.Previous();
+            const right = this.CompoundAssignFactor();
+            expr = new Expression_1.Expr.CompoundAssign(this.Peek(-3), operator, right);
+        }
+        return expr;
+    }
+    CompoundAssignFactor() {
+        let expr = this.CompoundAssignCoefficient();
+        while (this.Match(SyntaxType_1.SyntaxType.STAR_EQUAL, SyntaxType_1.SyntaxType.SLASH_EQUAL, SyntaxType_1.SyntaxType.PERCENT_EQUAL)) {
+            const operator = this.Previous();
+            const right = this.CompoundAssignCoefficient();
+            expr = new Expression_1.Expr.CompoundAssign(this.Peek(-3), operator, right);
+        }
+        return expr;
+    }
+    CompoundAssignCoefficient() {
+        let expr = this.Or();
+        while (this.Match(SyntaxType_1.SyntaxType.CARAT_EQUAL)) {
+            const operator = this.Previous();
+            const right = this.Or();
+            expr = new Expression_1.Expr.CompoundAssign(this.Peek(-3), operator, right);
+        }
+        return expr;
     }
     Primary() {
         if (this.Match(SyntaxType_1.SyntaxType.FALSE))
@@ -307,12 +356,15 @@ class Parser {
             switch (this.Peek().Type) {
                 case SyntaxType_1.SyntaxType.CLASS:
                 case SyntaxType_1.SyntaxType.METHOD:
-                case SyntaxType_1.SyntaxType.LET:
+                case SyntaxType_1.SyntaxType.LOCAL:
+                case SyntaxType_1.SyntaxType.GLOBAL:
+                case SyntaxType_1.SyntaxType.CONST:
                 case SyntaxType_1.SyntaxType.FOR:
                 case SyntaxType_1.SyntaxType.IF:
                 case SyntaxType_1.SyntaxType.WHILE:
                 case SyntaxType_1.SyntaxType.PRINT:
                 case SyntaxType_1.SyntaxType.RETURN:
+                case SyntaxType_1.SyntaxType.RAISE:
                     return;
             }
             this.Advance();

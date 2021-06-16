@@ -13,14 +13,39 @@
             <span class="k">print</span> <span class="s">"Hello, world!"</span>;
             <br>
             <br>
-            <span class="k">let</span> <span class="i">foo</span> = <span class="s">"bar"</span>;
+            <span class="c">
+                ##:
+                <br>
+                &nbsp;&nbsp;Globals and locals are the same thing when defined in the global scope.
+                <br>
+                &nbsp;&nbsp;When a local variable is defined inside of a nested scope, only that scope may access that variable's value.
+                <br>
+                &nbsp;&nbsp;When a global variable is defined inside of a nested scope, any scope may access that variable's value.
+                <br>
+                :##
+            </span>
             <br>
-            <span class="k">for</span> (<span class="k">let</span> <span class="i">i</span> = <span class="n">0</span>; <span class="i">i</span> &lt; <span class="n">10</span>; <span class="i">i</span>++)
+            <span class="k">global</span> <span class="i">a</span> = <span class="s">"outer"</span>;
             <br>
-            &nbsp;&nbsp;<span class="i">foo</span> = <span class="i">foo</span> + <span class="s">" bar"</span>;
+            {
+                <br>
+                &nbsp;&nbsp;<span class="k">local</span> <span class="i">a</span> = <span class="s">"inner"</span>;
+                <br>
+                &nbsp;&nbsp;<span class="k">print</span> <span class="i">a</span>;
+                <br>
+            }
+            <br>
+            <span class="k">print</span> <span class="i">a</span>;
             <br>
             <br>
-            <span class="k">let</span> <span class="i">count</span> = <span class="n">0</span>;
+            <span class="k">local</span> <span class="i">foo</span> = <span class="s">"bar"</span>;
+            <br>
+            <span class="k">for</span> (<span class="k">local</span> <span class="i">i</span> = <span class="n">0</span>; <span class="i">i</span> &lt; <span class="n">10</span>; <span class="i">i</span>++)
+            <br>
+            &nbsp;&nbsp;<span class="i">foo</span> = <span class="i">foo</span> + <span class="s">" bar"</span>; <span class="c">## I plan to implement compound assignment, but it's not implemented yet.</span>
+            <br>
+            <br>
+            <span class="k">local</span> <span class="i">count</span> = <span class="n">0</span>;
             <br>
             <span class="k">while</span> (<span class="b">true</span>) {
             <br>
@@ -42,16 +67,16 @@
             &nbsp;&nbsp;<span class="k">print</span> <span class="s">"Everything is normal."</span>;
             <br>
             <br>
-            <span class="k">method</span> <span class="i">sayHello</span>(<span class="p">name</span>) {
+            <span class="k">method</span> <span class="m">sayHello</span>(<span class="p">name</span>) {
             <br>
-            &nbsp;&nbsp;<span class="k">print</span> <span class="s">"Hello, "</span> + <span class="s">name</span> <span class="s">"."</span>;
+            &nbsp;&nbsp;<span class="k">print</span> <span class="s">"Hello, "</span> + <span class="p">name</span> + <span class="s">"."</span>;
             <br>
             }
             <br>
             <br>
-            <span class="i">sayHello</span>(<span class="s">"world"</span>);
+            <span class="m">sayHello</span>(<span class="s">"world"</span>);
             <br>
-            <span class="i">sayHello</span>(<span class="s">"Jane"</span>);
+            <span class="m">sayHello</span>(<span class="s">"Jane"</span>);
         </code>
     </body>
 </html>

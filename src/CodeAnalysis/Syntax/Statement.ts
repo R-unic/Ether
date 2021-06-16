@@ -9,6 +9,7 @@ export namespace Stmt {
     export interface Visitor<R> {
         VisitBlockStmt(stmt: Block): R;
         VisitExpressionStmt(stmt: Expression): R;
+        VisitGlobalVariableStmt(stmt: Global): R;
         VisitIfStmt(stmt: If): R;
         VisitPrintStmt(stmt: Print): R;
         VisitReturnStmt(stmt: Return): R;
@@ -39,6 +40,19 @@ export namespace Stmt {
 
         public Accept<R>(visitor: Visitor<R>): R {
             return visitor.VisitExpressionStmt(this);
+        }
+    }
+
+    export class Global extends Statement {
+        public constructor(
+            public readonly Name: Token,
+            public readonly Initializer: Expr.Expression | undefined
+        ) {
+            super();
+        }
+
+        public Accept<R>(visitor: Visitor<R>): R {
+            return visitor.VisitGlobalVariableStmt(this);
         }
     }
 

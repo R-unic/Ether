@@ -1,17 +1,22 @@
 import { Ether } from "../../Ether";
 import { SyntaxType as Syntax } from "../Syntax/SyntaxType";
 import { Expr } from "./Expression";
+import { Lexer } from "./Lexer";
 import { Stmt } from "./Statement";
 import { Token } from "./Token";
 
 class ParserError {}
 
 export class Parser {
+    public readonly Lexer: Lexer;
+
+    private readonly tokens: Token[];
     private current = 0;
 
-    public constructor(
-        private readonly tokens: Token[]
-    ) {}
+    public constructor(sourceCode: string) {
+        this.Lexer = new Lexer(sourceCode);
+        this.tokens = this.Lexer.LexTokens();
+    }
 
     public Parse(): Stmt.Statement[] {
         const statements: Stmt.Statement[] = [];
@@ -30,7 +35,10 @@ export class Parser {
             if (this.Match(Syntax.METHOD))
                 return this.Method("method");
 
-            if (this.Match(Syntax.LET))
+            if (this.Match(Syntax.GLOBAL))
+                return this.GlobalVarDeclaration();
+
+            if (this.Match(Syntax.LOCAL))
                 return this.VarDeclaration();
 
             return this.Statement();
@@ -40,7 +48,18 @@ export class Parser {
         }
     }
 
-    private VarDeclaration(): Stmt.Statement {
+    private GlobalVarDeclaration(): Stmt.Statement {
+        const name: Token = this.Consume(Syntax.IDENTIFIER, "Expected variable name.");
+
+        let initializer: Expr.Expression | undefined = this.Match(Syntax.EQUAL)?
+            this.Expression()
+            :undefined;
+
+        this.Consume(Syntax.SEMICOLON, "Expected ';' after variable declaration.");
+        return new Stmt.Global(name, initializer);
+    }
+
+    private VarDeclaration(): Stmt.Variable {
         const name: Token = this.Consume(Syntax.IDENTIFIER, "Expected variable name.");
 
         let initializer: Expr.Expression | undefined = this.Match(Syntax.EQUAL)?
@@ -120,7 +139,7 @@ export class Parser {
         let initializer: Stmt.Statement | undefined;
         if (this.Match(Syntax.SEMICOLON))
             initializer = undefined;
-        else if (this.Match(Syntax.LET))
+        else if (this.Match(Syntax.LOCAL))
             initializer = this.VarDeclaration();
         else
             initializer = this.ExpressionStatement();
@@ -195,16 +214,17 @@ export class Parser {
     }
 
     private Assignment(): Expr.Expression {
-        const expr: Expr.Expression = this.Or();
+        const expr: Expr.Expression = this.CompoundAssignment();
 
         if (this.Match(Syntax.EQUAL)) {
+            const scopeIdentifier: Token = this.Peek(-2);
             const equals: Token = this.Previous();
             const value: Expr.Expression = this.Assignment();
 
             if (expr instanceof Expr.Variable) {
                 const varExpr = expr as Expr.Variable;
                 const name: Token = varExpr.Name;
-                return new Expr.Assign(name, value);
+                return new Expr.Assign(name, value, scopeIdentifier.Lexeme === "global" ? true : false);
             }
 
             this.Error(equals, "Invalid assignment target.");
@@ -274,9 +294,21 @@ export class Parser {
     }
 
     private Factor(): Expr.Expression {
+        let expr: Expr.Expression = this.Coefficient();
+
+        while(this.Match(Syntax.SLASH, Syntax.STAR, Syntax.PERCENT)) {
+            const operator: Token = this.Previous();
+            const right: Expr.Expression = this.Coefficient();
+            expr = new Expr.Binary(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    private Coefficient(): Expr.Expression {
         let expr: Expr.Expression = this.Unary();
 
-        while(this.Match(Syntax.SLASH, Syntax.STAR, Syntax.CARAT, Syntax.PERCENT)) {
+        while(this.Match(Syntax.CARAT)) {
             const operator: Token = this.Previous();
             const right: Expr.Expression = this.Unary();
             expr = new Expr.Binary(expr, operator, right);
@@ -286,7 +318,7 @@ export class Parser {
     }
 
     private Unary(): Expr.Expression {
-        while(this.Match(Syntax.BANG, Syntax.MINUS)) {
+        while(this.Match(Syntax.BANG, Syntax.MINUS, Syntax.PLUS)) {
             const operator: Token = this.Previous();
             const right: Expr.Expression = this.Unary();
             return new Expr.Unary(operator, right);
@@ -318,6 +350,42 @@ export class Parser {
 
         const paren: Token = this.Consume(Syntax.RIGHT_PAREN, "Expected ')' after argument list.");
         return new Expr.Call(callee, paren, args);
+    }
+
+    private CompoundAssignment(): Expr.Expression {
+        let expr: Expr.Expression = this.CompoundAssignFactor();
+
+        while(this.Match(Syntax.PLUS_EQUAL, Syntax.MINUS_EQUAL)) {
+            const operator: Token = this.Previous();
+            const right: Expr.Expression = this.CompoundAssignFactor();
+            expr = new Expr.CompoundAssign(this.Peek(-3), operator, right);
+        }
+
+        return expr;
+    }
+
+    private CompoundAssignFactor(): Expr.Expression {
+        let expr: Expr.Expression = this.CompoundAssignCoefficient();
+
+        while(this.Match(Syntax.STAR_EQUAL, Syntax.SLASH_EQUAL, Syntax.PERCENT_EQUAL)) {
+            const operator: Token = this.Previous();
+            const right: Expr.Expression = this.CompoundAssignCoefficient();
+            expr = new Expr.CompoundAssign(this.Peek(-3), operator, right);
+        }
+
+        return expr;
+    }
+
+    private CompoundAssignCoefficient(): Expr.Expression {
+        let expr: Expr.Expression = this.Or();
+
+        while(this.Match(Syntax.CARAT_EQUAL)) {
+            const operator: Token = this.Previous();
+            const right: Expr.Expression = this.Or();
+            expr = new Expr.CompoundAssign(this.Peek(-3), operator, right);
+        }
+
+        return expr;
     }
 
     private Primary(): Expr.Expression {
@@ -401,12 +469,15 @@ export class Parser {
             switch (this.Peek().Type) {
                 case Syntax.CLASS:
                 case Syntax.METHOD:
-                case Syntax.LET:
+                case Syntax.LOCAL:
+                case Syntax.GLOBAL:
+                case Syntax.CONST:
                 case Syntax.FOR:
                 case Syntax.IF:
                 case Syntax.WHILE:
                 case Syntax.PRINT:
                 case Syntax.RETURN:
+                case Syntax.RAISE:
                     return;
             }
 

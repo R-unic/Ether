@@ -7,10 +7,16 @@ const Ether_1 = require("../../Ether");
 const Statement_1 = require("../Syntax/Statement");
 const SyntaxType_1 = require("../Syntax/SyntaxType");
 const Environment_1 = require("./Environment");
+const Boolean_1 = require("./Lib/Boolean");
+const Input_1 = require("./Lib/Input");
+const Number_1 = require("./Lib/Number");
+const String_1 = require("./Lib/String");
 const Time_1 = require("./Lib/Time");
 const Wait_1 = require("./Lib/Wait");
 const Warn_1 = require("./Lib/Warn");
 const Method_1 = require("./Method");
+const Resolver_1 = require("./Resolver");
+const StringBuilder_1 = require("../../Utility/StringBuilder");
 class RuntimeError extends EvalError {
     constructor(Token, message) {
         super(message);
@@ -29,14 +35,27 @@ class Interpreter {
     constructor() {
         this.Globals = new Environment_1.Environment;
         this.environment = this.Globals;
+        this.locals = new Map();
+        this.Globals.Define("boolean", new Input_1.InputMethod);
+        this.Globals.Define("input", new Boolean_1.BooleanMethod);
+        this.Globals.Define("number", new Number_1.NumberMethod);
+        this.Globals.Define("string", new String_1.StringMethod);
         this.Globals.Define("time", new Time_1.TimeMethod);
-        this.Globals.Define("warn", new Warn_1.WarnMethod);
         this.Globals.Define("wait", new Wait_1.WaitMethod);
-        this.Globals.Define("__etherversion", `Ether 1.4.0`);
+        this.Globals.Define("warn", new Warn_1.WarnMethod);
+        this.Globals.Define("argv", ["ether", ...Ether_1.Ether.Args]);
+        this.Globals.Define("__version", `Ether 1.4.0`);
     }
-    Interpret(parser, statements, repl) {
+    Interpret(parser, repl) {
         try {
             this.Parser = parser;
+            const statements = parser.Parse();
+            if (Ether_1.Ether.HadError)
+                return;
+            const resolver = new Resolver_1.Resolver(this);
+            resolver.Resolve(statements);
+            if (Ether_1.Ether.HadError)
+                return;
             for (const statement of statements)
                 if (statement instanceof Statement_1.Stmt.Expression && repl === true) {
                     const value = this.Evaluate(statement.Expression);
@@ -55,6 +74,9 @@ class Interpreter {
     Execute(stmt) {
         stmt.Accept(this);
     }
+    Resolve(expr, depth) {
+        this.locals.set(expr, depth);
+    }
     ExecuteBlock(statements, environment) {
         const previous = this.environment;
         try {
@@ -65,6 +87,16 @@ class Interpreter {
         finally {
             this.environment = previous;
         }
+    }
+    LookupVariable(name, expr) {
+        const distance = this.locals.get(expr);
+        if (distance !== undefined)
+            return this.environment.GetAt(distance, name.Lexeme);
+        else
+            return this.Globals.Get(name);
+    }
+    IsCallable(value) {
+        return value.Call !== undefined;
     }
     VisitReturnStmt(stmt) {
         let value = undefined;
@@ -100,6 +132,12 @@ class Interpreter {
         const value = this.Evaluate(stmt.Expression);
         console_1.log(this.GetStyling(value) !== undefined ? this.GetStyling(value) : this.Stringify(value));
     }
+    VisitGlobalVariableStmt(stmt) {
+        let value;
+        if (stmt.Initializer !== undefined)
+            value = this.Evaluate(stmt.Initializer);
+        this.Globals.Define(stmt.Name.Lexeme, value);
+    }
     VisitVariableStmt(stmt) {
         let value;
         if (stmt.Initializer !== undefined)
@@ -112,31 +150,88 @@ class Interpreter {
         for (const arg of expr.Arguments)
             args.push(this.Evaluate(arg));
         const method = callee;
-        if (!method)
+        if (!this.IsCallable(callee))
             throw new RuntimeError(expr.Paren, "Can only call methods and classes.");
         if (args.length != method.Arity())
             throw new RuntimeError(expr.Paren, `Expected ${method.Arity()} arguments, got ${args.length}.`);
         return method.Call(this, args);
     }
+    VisitCompoundAssignExpr(expr) {
+        const value = this.Evaluate(expr.Value);
+        const variable = this.environment.Get(expr.Name);
+        switch (expr.Operator.Type) {
+            case SyntaxType_1.SyntaxType.PLUS_EQUAL: {
+                if (typeof value === "number" && typeof variable === "number") {
+                    this.environment.Assign(expr.Name, variable + value);
+                    break;
+                }
+                else if (typeof value === "string" && typeof variable === "string") {
+                    this.environment.Assign(expr.Name, variable + value);
+                    break;
+                }
+                throw new RuntimeError(expr.Operator, `Expected two strings or two numbers, got ${typeof value} and ${typeof variable}.`);
+            }
+            case SyntaxType_1.SyntaxType.MINUS_EQUAL: {
+                if (typeof value === "number" && typeof variable === "number") {
+                    this.environment.Assign(expr.Name, variable - value);
+                    break;
+                }
+                throw new RuntimeError(expr.Operator, `Expected two numbers, got ${typeof value} and ${typeof variable}.`);
+            }
+            case SyntaxType_1.SyntaxType.STAR_EQUAL: {
+                if (typeof value === "number" && typeof variable === "number") {
+                    this.environment.Assign(expr.Name, variable * value);
+                    break;
+                }
+                throw new RuntimeError(expr.Operator, `Expected two numbers, got ${typeof value} and ${typeof variable}.`);
+            }
+            case SyntaxType_1.SyntaxType.SLASH_EQUAL: {
+                if (typeof value === "number" && typeof variable === "number") {
+                    this.environment.Assign(expr.Name, variable / value);
+                    break;
+                }
+                throw new RuntimeError(expr.Operator, `Expected two numbers, got ${typeof value} and ${typeof variable}.`);
+            }
+            case SyntaxType_1.SyntaxType.CARAT_EQUAL: {
+                if (typeof value === "number" && typeof variable === "number") {
+                    this.environment.Assign(expr.Name, Math.pow(variable, value));
+                    break;
+                }
+                throw new RuntimeError(expr.Operator, `Expected two numbers, got ${typeof value} and ${typeof variable}.`);
+            }
+            case SyntaxType_1.SyntaxType.PERCENT_EQUAL: {
+                if (typeof value === "number" && typeof variable === "number") {
+                    this.environment.Assign(expr.Name, variable % value);
+                    break;
+                }
+                throw new RuntimeError(expr.Operator, `Expected two numbers, got ${typeof value} and ${typeof variable}.`);
+            }
+        }
+        return this.environment.Get(expr.Name);
+    }
     VisitLogicalExpr(expr) {
         const left = this.Evaluate(expr.Left);
-        if (expr.Operator.Type === SyntaxType_1.SyntaxType.OR) {
+        if (expr.Operator.Type === SyntaxType_1.SyntaxType.OR)
             if (this.IsTruthy(left))
                 return left;
-        }
-        else {
-            if (!this.IsTruthy(left))
+            else if (!this.IsTruthy(left))
                 return left;
-        }
         return this.Evaluate(expr.Right);
     }
     VisitAssignExpr(expr) {
         const value = this.Evaluate(expr.Value);
-        this.environment.Assign(expr.Name, value);
+        const distance = this.locals.get(expr);
+        if (distance !== undefined)
+            this.environment.AssignAt(distance, expr.Name, value);
+        else
+            this.Globals.Assign(expr.Name, value);
         return value;
     }
+    VisitGlobalVariableExpr(expr) {
+        return this.LookupVariable(expr.Name, expr);
+    }
     VisitVariableExpr(expr) {
-        return this.environment.Get(expr.Name);
+        return this.LookupVariable(expr.Name, expr);
     }
     VisitBinaryExpr(expr) {
         const left = this.Evaluate(expr.Left);
@@ -206,6 +301,8 @@ class Interpreter {
             return safe_1.cyan(strValue);
         if (value instanceof Error)
             return safe_1.red(strValue);
+        if (value instanceof Array)
+            return safe_1.yellow(strValue);
         switch (typeof value) {
             case "boolean":
                 return safe_1.yellow(strValue);
@@ -225,6 +322,13 @@ class Interpreter {
             return value.toString();
         if (value.ToString !== undefined)
             return value.ToString();
+        if (value instanceof Array) {
+            const arrStr = new StringBuilder_1.StringBuilder;
+            arrStr.Append("[ ");
+            for (const v of value)
+                arrStr.Append(this.GetStyling(v));
+            arrStr.Append(" ]");
+        }
         return value.toString() || value;
     }
     CheckNumberOperand(operator, operand) {

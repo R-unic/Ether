@@ -5,6 +5,39 @@ import { Token } from "../CodeAnalysis/Syntax/Token";
 import { SyntaxType } from "../CodeAnalysis/Syntax/SyntaxType";
 
 describe("Lexer", () => {
+    describe("Compound assignment test", () => {
+        const lexer = new Lexer("a += 1;");
+        const tokens: Token[] = lexer.LexTokens();
+        const 
+            first = tokens[0], 
+            second = tokens[1],
+            third = tokens[2], 
+            fourth = tokens[3];
+
+        it("should produce 4 tokens", () => 
+            expect(
+                tokens.length - 1
+            ).to.equal(4)
+        );
+        it("should have identifier, plus equals, number, and semicolon tokens", () => {
+            expect(first.Type).to.equal(SyntaxType.IDENTIFIER);
+            expect(second.Type).to.equal(SyntaxType.PLUS_EQUAL);
+            expect(third.Type).to.equal(SyntaxType.NUMBER);
+            expect(fourth.Type).to.equal(SyntaxType.SEMICOLON);
+        });
+        it("should have null, null, 1, and null literals in that order", () => {
+            expect(first.Literal).to.equal(null);
+            expect(second.Literal).to.equal(null);
+            expect(third.Literal).to.equal(1);
+            expect(fourth.Literal).to.equal(null);
+        });
+        it("should produce proper lexemes", () => {
+            expect(first.Lexeme).to.equal("a");
+            expect(second.Lexeme).to.equal("+=");
+            expect(third.Lexeme).to.equal("1");
+            expect(fourth.Lexeme).to.equal(";");
+        });
+    });
     describe("Add and subtract test", () => {
         const lexer = new Lexer("4 + 7 - 3");
         const tokens: Token[] = lexer.LexTokens();
@@ -90,7 +123,7 @@ describe("Lexer", () => {
             first = tokens[0], 
             second = tokens[1], 
             third = tokens[2];
-
+            
         it("should produce 3 tokens", () => 
             expect(
                 tokens.length - 1
@@ -100,6 +133,11 @@ describe("Lexer", () => {
             expect(first.Type).to.equal(SyntaxType.BANG);
             expect(second.Type).to.equal(SyntaxType.FALSE);
             expect(third.Type).to.equal(SyntaxType.SEMICOLON);
+        });
+        it("should produce null, false, and null literals in that order", () => {
+            expect(first.Literal).to.equal(null);
+            expect(second.Literal).to.equal(null);
+            expect(third.Literal).to.equal(null);
         });
     });
     describe("Literal test", () => {
@@ -149,6 +187,46 @@ describe("Lexer", () => {
             expect(third.Literal).to.equal(null);
         });
     });
+    describe("Local/global variable test", () => {
+        (() => {
+            const lexer = new Lexer("global var = 8;");
+            const tokens: Token[] = lexer.LexTokens();
+            
+            const 
+                first = tokens[0], 
+                second = tokens[1], 
+                third = tokens[2],
+                fourth = tokens[3], 
+                fifth = tokens[4];
+            
+            it("should produce 5 tokens", () =>
+                expect(
+                    tokens.length - 1
+                ).to.equal(5)
+            );
+            it("should have global, identifier, equals, number, and semicolon tokens", () => {
+                expect(first.Type).to.equal(SyntaxType.GLOBAL);
+                expect(second.Type).to.equal(SyntaxType.IDENTIFIER);
+                expect(third.Type).to.equal(SyntaxType.EQUAL);
+                expect(fourth.Type).to.equal(SyntaxType.NUMBER);
+                expect(fifth.Type).to.equal(SyntaxType.SEMICOLON);
+            });
+            it("should produce proper lexemes", () => {
+                expect(first.Lexeme).to.equal("global");
+                expect(second.Lexeme).to.equal("var");
+                expect(third.Lexeme).to.equal("=");
+                expect(fourth.Lexeme).to.equal("8");
+                expect(fifth.Lexeme).to.equal(";");
+            });
+            it("should produce proper literals", () => {
+                expect(first.Literal).to.equal(null);
+                expect(second.Literal).to.equal(null);
+                expect(third.Literal).to.equal(null);
+                expect(fourth.Literal).to.equal(8);
+                expect(fifth.Literal).to.equal(null);
+            });
+        })()
+    });
     describe("Comment test", () => {
         const lexer = new Lexer("## This is a comment.");
         const tokens: Token[] = lexer.LexTokens();
@@ -156,6 +234,12 @@ describe("Lexer", () => {
             expect(
                 tokens.length - 1
             ).to.equal(0)
+        );
+    });
+    describe("Error reporting test", () => {
+        const lexer = new Lexer("$@\\");
+        it("should raise an unexpected character error", () =>
+            expect(lexer.LexTokens).to.throw()
         );
     });
 });

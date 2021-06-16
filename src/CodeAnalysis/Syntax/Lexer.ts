@@ -40,7 +40,7 @@ export class Lexer {
             case "-": {
                 let type = Syntax.MINUS;
                 if (this.Match('='))
-                    type = Syntax.MINUS_EQUALS;
+                    type = Syntax.MINUS_EQUAL;
                 if (this.Match('-'))
                     type = Syntax.MINUS_MINUS;
                 this.AddToken(type);  
@@ -49,27 +49,31 @@ export class Lexer {
             case "+": {
                 let type = Syntax.PLUS;
                 if (this.Match('='))
-                    type = Syntax.PLUS_EQUALS;
+                    type = Syntax.PLUS_EQUAL;
                 if (this.Match('+'))
                     type = Syntax.PLUS_PLUS;
                 this.AddToken(type);  
                 break;
             }
             case "*": 
-                this.AddToken(this.Match('=') ? Syntax.STAR_EQUALS : Syntax.STAR);  
+                this.AddToken(this.Match('=') ? Syntax.STAR_EQUAL : Syntax.STAR);  
                 break;
             case '/': 
-                this.AddToken(this.Match('=') ? Syntax.SLASH_EQUALS : Syntax.SLASH);  
+                this.AddToken(this.Match('=') ? Syntax.SLASH_EQUAL : Syntax.SLASH);  
                 break;
             case "^": 
-                this.AddToken(this.Match('=') ? Syntax.CARAT_EQUALS : Syntax.CARAT);  
+                this.AddToken(this.Match('=') ? Syntax.CARAT_EQUAL : Syntax.CARAT);  
                 break;
             case "%": 
-                this.AddToken(this.Match('=') ? Syntax.PERCENT_EQUALS : Syntax.PERCENT);  
+                this.AddToken(this.Match('=') ? Syntax.PERCENT_EQUAL : Syntax.PERCENT);  
                 break;
             case "#": 
                 if (this.Match("#"))
-                    this.SkipComment();
+                    if (this.Match(":"))
+                        do this.SkipMultilineComment();
+                        while (this.Match(":") && this.Match("#") && this.Match("#"));
+                    else
+                        this.SkipComment();
                 else
                     this.AddToken(Syntax.HASHTAG);
                 break;
@@ -86,6 +90,10 @@ export class Lexer {
                 this.AddToken(this.Match('=') ? Syntax.GREATER_EQUAL : Syntax.GREATER);
                 break;
 
+            case ":": 
+                this.AddToken(this.Match(':') ? Syntax.COLON_COLON : Syntax.COLON);  
+                break;
+
             case ' ':
             case '\r':
             case '\t':
@@ -97,14 +105,14 @@ export class Lexer {
 
             case "'":
             case '"':
-                this.String();
+                this.String(char);
                 break;
 
             case "|":
-                this.AddToken(this.Match('=') ? Syntax.OR_EQUALS : Syntax.OR); 
+                this.AddToken(this.Match('=') ? Syntax.OR_EQUAL : Syntax.OR); 
                 break;
             case "&":
-                this.AddToken(this.Match('=') ? Syntax.AND_EQUALS : Syntax.AND); 
+                this.AddToken(this.Match('=') ? Syntax.AND_EQUAL : Syntax.AND); 
                 break;
 
             default:
@@ -116,6 +124,11 @@ export class Lexer {
                     Ether.Error(this.line, "Unexpected character.");
                 break;
         }
+    }
+
+    private SkipMultilineComment(): void {
+        while (this.Peek() !== ":" && this.Peek() !== "#" && this.Peek() !== "#" && !this.Completed)
+            this.Advance();
     }
 
     private SkipComment(): void {
@@ -176,8 +189,8 @@ export class Lexer {
         this.AddToken(type);
     }
 
-    private String(): void {        
-        while ((this.Peek() !== '"' && this.Peek() !== "'") && !this.Completed) {
+    private String(delimiter: string): void {        
+        while (this.Peek() !== delimiter && !this.Completed) {
             if (this.Peek() === "\n")
                 this.line++;
 

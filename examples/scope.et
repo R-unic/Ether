@@ -1,11 +1,11 @@
-let a = "global a";
-let b = "global b";
-let c = "global c";
+global a = "global a";
+global b = "global b";
+global c = "global c";
 {
-  let a = "outer a";
-  let b = "outer b";
+  local a = "outer a";
+  local b = "outer b";
   {
-    let a = "inner a";
+    local a = "inner a";
     print a;
     print b;
     print c;

@@ -1,7 +1,6 @@
-method count(n) {
-	if (n > 1) 
-		count(n - 1);
-	print n;
+method sayHello(name) {
+	print "Hello, " + name + "!";
 }
 
-count(3);
+sayHello("world");
+sayHello("Jane");

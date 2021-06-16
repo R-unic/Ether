@@ -1,0 +1,10 @@
+global a = "global";
+{
+  method showA() {
+    print a;
+  }
+
+  showA();
+  local a = "block";
+  showA();
+}

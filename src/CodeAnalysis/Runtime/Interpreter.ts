@@ -6,12 +6,18 @@ import { Parser } from "../Syntax/Parser";
 import { Stmt } from "../Syntax/Statement";
 import { SyntaxType as Syntax } from "../Syntax/SyntaxType";
 import { Token } from "../Syntax/Token";
-import { Callable } from "./Callable";
 import { Environment } from "./Environment";
+import { BooleanMethod } from "./Lib/Boolean";
+import { InputMethod } from "./Lib/Input";
+import { NumberMethod } from "./Lib/Number";
+import { StringMethod } from "./Lib/String";
 import { TimeMethod } from "./Lib/Time";
 import { WaitMethod } from "./Lib/Wait";
 import { WarnMethod } from "./Lib/Warn";
+import { Callable } from "./Callable";
 import { Method } from "./Method";
+import { Resolver } from "./Resolver";
+import { StringBuilder } from "../../Utility/StringBuilder";
 
 export class RuntimeError extends EvalError {
     public constructor(
@@ -35,17 +41,33 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
     public readonly Globals = new Environment;
     public Parser?: Parser;
     private environment = this.Globals;
+    private readonly locals = new Map<Expr.Expression, number>();
 
     public constructor() {
+        this.Globals.Define("boolean", new InputMethod);
+        this.Globals.Define("input", new BooleanMethod);
+        this.Globals.Define("number", new NumberMethod);
+        this.Globals.Define("string", new StringMethod);
         this.Globals.Define("time", new TimeMethod);
-        this.Globals.Define("warn", new WarnMethod);
         this.Globals.Define("wait", new WaitMethod);
-        this.Globals.Define("__etherversion", `Ether 1.4.0`);
+        this.Globals.Define("warn", new WarnMethod);
+        this.Globals.Define("argv", [ "ether", ...Ether.Args ]);
+        this.Globals.Define("__version", `Ether 1.4.0`);
     }
 
-    public Interpret(parser: Parser, statements: Stmt.Statement[], repl: boolean): void {
+    public Interpret(parser: Parser, repl: boolean): void {
         try {
             this.Parser = parser;
+            const statements: Stmt.Statement[] = parser.Parse();
+            if (Ether.HadError)
+                return;
+
+            const resolver = new Resolver(this);
+            resolver.Resolve(statements);
+            
+            if (Ether.HadError)
+                return;
+
             for(const statement of statements)
                 if (statement instanceof Stmt.Expression && repl === true) {
                     const value: unknown = this.Evaluate(statement.Expression);
@@ -65,6 +87,10 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
         stmt.Accept<void>(this);
     }
 
+    public Resolve(expr: Expr.Expression, depth: number) {
+        this.locals.set(expr, depth);
+    }
+
     public ExecuteBlock(statements: Stmt.Statement[], environment: Environment): void {
         const previous: Environment = this.environment;
 
@@ -76,6 +102,18 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
         } finally {
             this.environment = previous;
         }
+    }
+
+    private LookupVariable(name: Token, expr: Expr.Expression): unknown {
+        const distance: number | undefined = this.locals.get(expr);
+        if (distance !== undefined)
+            return this.environment.GetAt(distance, name.Lexeme);
+        else
+            return this.Globals.Get(name);
+    }
+
+    private IsCallable(value: unknown): value is Callable {
+        return (value as Callable).Call !== undefined;
     }
 
     public VisitReturnStmt(stmt: Stmt.Return): void {
@@ -121,6 +159,14 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
         log(this.GetStyling(value) !== undefined ? this.GetStyling(value) : this.Stringify(value));
     }
 
+    public VisitGlobalVariableStmt(stmt: Stmt.Global): void {
+        let value: unknown;
+        if (stmt.Initializer !== undefined)
+            value = this.Evaluate(stmt.Initializer);
+
+        this.Globals.Define(stmt.Name.Lexeme, value);
+    }
+
     public VisitVariableStmt(stmt: Stmt.Variable): void {
         let value: unknown;
         if (stmt.Initializer !== undefined)
@@ -137,7 +183,7 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
             args.push(this.Evaluate(arg));
 
         const method = callee as Callable;
-        if (!method)
+        if (!this.IsCallable(callee))
             throw new RuntimeError(expr.Paren, "Can only call methods and classes.");
 
         if (args.length != method.Arity())
@@ -146,28 +192,97 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
         return method.Call(this, args);
     }
 
+    public VisitCompoundAssignExpr(expr: Expr.CompoundAssign): unknown {
+        const value: unknown = this.Evaluate(expr.Value);
+        const variable: unknown = this.environment.Get(expr.Name);
+        
+        switch (expr.Operator.Type) {
+            case Syntax.PLUS_EQUAL: {
+                if (typeof value === "number" && typeof variable === "number") {
+                    this.environment.Assign(expr.Name, variable + value);
+                    break;
+                } else if (typeof value === "string" && typeof variable === "string") {
+                    this.environment.Assign(expr.Name, variable + value);
+                    break;
+                }
+                    
+                throw new RuntimeError(expr.Operator, `Expected two strings or two numbers, got ${typeof value} and ${typeof variable}.`);
+            }
+            case Syntax.MINUS_EQUAL: {
+                if (typeof value === "number" && typeof variable === "number") {
+                    this.environment.Assign(expr.Name, variable - value);
+                    break;
+                }
+                    
+                throw new RuntimeError(expr.Operator, `Expected two numbers, got ${typeof value} and ${typeof variable}.`);
+            }
+            case Syntax.STAR_EQUAL: {
+                if (typeof value === "number" && typeof variable === "number") {
+                    this.environment.Assign(expr.Name, variable * value);
+                    break;
+                }
+                    
+                throw new RuntimeError(expr.Operator, `Expected two numbers, got ${typeof value} and ${typeof variable}.`);
+            }
+            case Syntax.SLASH_EQUAL: {
+                if (typeof value === "number" && typeof variable === "number") {
+                    this.environment.Assign(expr.Name, variable / value);
+                    break;
+                }
+                    
+                throw new RuntimeError(expr.Operator, `Expected two numbers, got ${typeof value} and ${typeof variable}.`);
+            }
+            case Syntax.CARAT_EQUAL: {
+                if (typeof value === "number" && typeof variable === "number") {
+                    this.environment.Assign(expr.Name, variable ** value);
+                    break;
+                }
+                    
+                throw new RuntimeError(expr.Operator, `Expected two numbers, got ${typeof value} and ${typeof variable}.`);
+            }
+            case Syntax.PERCENT_EQUAL: {
+                if (typeof value === "number" && typeof variable === "number") {
+                    this.environment.Assign(expr.Name, variable % value);
+                    break;
+                }
+                    
+                throw new RuntimeError(expr.Operator, `Expected two numbers, got ${typeof value} and ${typeof variable}.`);
+            }
+        }
+
+        return this.environment.Get(expr.Name);
+    }
+
     public VisitLogicalExpr(expr: Expr.Logical): unknown {
         const left: unknown = this.Evaluate(expr.Left);
 
-        if (expr.Operator.Type === Syntax.OR) {
+        if (expr.Operator.Type === Syntax.OR)
             if (this.IsTruthy(left))
                 return left;
-        } else {
+        else
             if (!this.IsTruthy(left))
                 return left;
-        }
         
         return this.Evaluate(expr.Right);
     }
 
     public VisitAssignExpr(expr: Expr.Assign): unknown {
         const value: unknown = this.Evaluate(expr.Value);
-        this.environment.Assign(expr.Name, value);
+        const distance: number | undefined = this.locals.get(expr);
+        if (distance !== undefined)
+            this.environment.AssignAt(distance, expr.Name, value);
+        else
+            this.Globals.Assign(expr.Name, value);
+
         return value;
     }
 
+    public VisitGlobalVariableExpr(expr: Expr.Global): unknown {
+        return this.LookupVariable(expr.Name, expr);
+    }
+
     public VisitVariableExpr(expr: Expr.Variable): unknown {
-        return this.environment.Get(expr.Name);
+        return this.LookupVariable(expr.Name, expr);
     }
 
     public VisitBinaryExpr(expr: Expr.Binary): unknown {
@@ -244,7 +359,7 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
         return void 0;
     }
 
-    public GetStyling(value: unknown): string | undefined {
+    public GetStyling(value: unknown): string {
         const strValue: string = this.Stringify(value);
         if (strValue === "null")
             return cyan(strValue);

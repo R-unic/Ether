@@ -51,7 +51,7 @@ class Lexer {
             case "-": {
                 let type = SyntaxType_1.SyntaxType.MINUS;
                 if (this.Match('='))
-                    type = SyntaxType_1.SyntaxType.MINUS_EQUALS;
+                    type = SyntaxType_1.SyntaxType.MINUS_EQUAL;
                 if (this.Match('-'))
                     type = SyntaxType_1.SyntaxType.MINUS_MINUS;
                 this.AddToken(type);
@@ -60,27 +60,32 @@ class Lexer {
             case "+": {
                 let type = SyntaxType_1.SyntaxType.PLUS;
                 if (this.Match('='))
-                    type = SyntaxType_1.SyntaxType.PLUS_EQUALS;
+                    type = SyntaxType_1.SyntaxType.PLUS_EQUAL;
                 if (this.Match('+'))
                     type = SyntaxType_1.SyntaxType.PLUS_PLUS;
                 this.AddToken(type);
                 break;
             }
             case "*":
-                this.AddToken(this.Match('=') ? SyntaxType_1.SyntaxType.STAR_EQUALS : SyntaxType_1.SyntaxType.STAR);
+                this.AddToken(this.Match('=') ? SyntaxType_1.SyntaxType.STAR_EQUAL : SyntaxType_1.SyntaxType.STAR);
                 break;
             case '/':
-                this.AddToken(this.Match('=') ? SyntaxType_1.SyntaxType.SLASH_EQUALS : SyntaxType_1.SyntaxType.SLASH);
+                this.AddToken(this.Match('=') ? SyntaxType_1.SyntaxType.SLASH_EQUAL : SyntaxType_1.SyntaxType.SLASH);
                 break;
             case "^":
-                this.AddToken(this.Match('=') ? SyntaxType_1.SyntaxType.CARAT_EQUALS : SyntaxType_1.SyntaxType.CARAT);
+                this.AddToken(this.Match('=') ? SyntaxType_1.SyntaxType.CARAT_EQUAL : SyntaxType_1.SyntaxType.CARAT);
                 break;
             case "%":
-                this.AddToken(this.Match('=') ? SyntaxType_1.SyntaxType.PERCENT_EQUALS : SyntaxType_1.SyntaxType.PERCENT);
+                this.AddToken(this.Match('=') ? SyntaxType_1.SyntaxType.PERCENT_EQUAL : SyntaxType_1.SyntaxType.PERCENT);
                 break;
             case "#":
                 if (this.Match("#"))
-                    this.SkipComment();
+                    if (this.Match(":"))
+                        do
+                            this.SkipMultilineComment();
+                        while (this.Match(":") && this.Match("#") && this.Match("#"));
+                    else
+                        this.SkipComment();
                 else
                     this.AddToken(SyntaxType_1.SyntaxType.HASHTAG);
                 break;
@@ -96,6 +101,9 @@ class Lexer {
             case '>':
                 this.AddToken(this.Match('=') ? SyntaxType_1.SyntaxType.GREATER_EQUAL : SyntaxType_1.SyntaxType.GREATER);
                 break;
+            case ":":
+                this.AddToken(this.Match(':') ? SyntaxType_1.SyntaxType.COLON_COLON : SyntaxType_1.SyntaxType.COLON);
+                break;
             case ' ':
             case '\r':
             case '\t':
@@ -105,13 +113,13 @@ class Lexer {
                 break;
             case "'":
             case '"':
-                this.String();
+                this.String(char);
                 break;
             case "|":
-                this.AddToken(this.Match('=') ? SyntaxType_1.SyntaxType.OR_EQUALS : SyntaxType_1.SyntaxType.OR);
+                this.AddToken(this.Match('=') ? SyntaxType_1.SyntaxType.OR_EQUAL : SyntaxType_1.SyntaxType.OR);
                 break;
             case "&":
-                this.AddToken(this.Match('=') ? SyntaxType_1.SyntaxType.AND_EQUALS : SyntaxType_1.SyntaxType.AND);
+                this.AddToken(this.Match('=') ? SyntaxType_1.SyntaxType.AND_EQUAL : SyntaxType_1.SyntaxType.AND);
                 break;
             default:
                 if (this.IsDigit(char))
@@ -122,6 +130,10 @@ class Lexer {
                     Ether_1.Ether.Error(this.line, "Unexpected character.");
                 break;
         }
+    }
+    SkipMultilineComment() {
+        while (this.Peek() !== ":" && this.Peek() !== "#" && this.Peek() !== "#" && !this.Completed)
+            this.Advance();
     }
     SkipComment() {
         while (this.Peek() !== "\n" && !this.Completed)
@@ -168,8 +180,8 @@ class Lexer {
         let type = (_a = Keywords_1.Keywords.get(text)) !== null && _a !== void 0 ? _a : SyntaxType_1.SyntaxType.IDENTIFIER;
         this.AddToken(type);
     }
-    String() {
-        while ((this.Peek() !== '"' && this.Peek() !== "'") && !this.Completed) {
+    String(delimiter) {
+        while (this.Peek() !== delimiter && !this.Completed) {
             if (this.Peek() === "\n")
                 this.line++;
             this.Advance();

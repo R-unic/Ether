@@ -1,6 +1,7 @@
-let a; ## Initiliaze empty var named 'a' (not necessary)
+global a; ## Initiliaze empty var named 'a' (not necessary)
 print a; ##>> null
 
 a = 5; ## Assign 'a' to 5
+print a; ##>> 5
 a = "hello"; ## Assign 'a' to "hello"
 print a; ##>> hello

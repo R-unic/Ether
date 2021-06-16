@@ -5,6 +5,30 @@ const chai_1 = require("chai");
 const Lexer_1 = require("../CodeAnalysis/Syntax/Lexer");
 const SyntaxType_1 = require("../CodeAnalysis/Syntax/SyntaxType");
 mocha_1.describe("Lexer", () => {
+    mocha_1.describe("Compound assignment test", () => {
+        const lexer = new Lexer_1.Lexer("a += 1;");
+        const tokens = lexer.LexTokens();
+        const first = tokens[0], second = tokens[1], third = tokens[2], fourth = tokens[3];
+        it("should produce 4 tokens", () => chai_1.expect(tokens.length - 1).to.equal(4));
+        it("should have identifier, plus equals, number, and semicolon tokens", () => {
+            chai_1.expect(first.Type).to.equal(SyntaxType_1.SyntaxType.IDENTIFIER);
+            chai_1.expect(second.Type).to.equal(SyntaxType_1.SyntaxType.PLUS_EQUAL);
+            chai_1.expect(third.Type).to.equal(SyntaxType_1.SyntaxType.NUMBER);
+            chai_1.expect(fourth.Type).to.equal(SyntaxType_1.SyntaxType.SEMICOLON);
+        });
+        it("should have null, null, 1, and null literals in that order", () => {
+            chai_1.expect(first.Literal).to.equal(null);
+            chai_1.expect(second.Literal).to.equal(null);
+            chai_1.expect(third.Literal).to.equal(1);
+            chai_1.expect(fourth.Literal).to.equal(null);
+        });
+        it("should produce proper lexemes", () => {
+            chai_1.expect(first.Lexeme).to.equal("a");
+            chai_1.expect(second.Lexeme).to.equal("+=");
+            chai_1.expect(third.Lexeme).to.equal("1");
+            chai_1.expect(fourth.Lexeme).to.equal(";");
+        });
+    });
     mocha_1.describe("Add and subtract test", () => {
         const lexer = new Lexer_1.Lexer("4 + 7 - 3");
         const tokens = lexer.LexTokens();
@@ -65,6 +89,11 @@ mocha_1.describe("Lexer", () => {
             chai_1.expect(second.Type).to.equal(SyntaxType_1.SyntaxType.FALSE);
             chai_1.expect(third.Type).to.equal(SyntaxType_1.SyntaxType.SEMICOLON);
         });
+        it("should produce null, false, and null literals in that order", () => {
+            chai_1.expect(first.Literal).to.equal(null);
+            chai_1.expect(second.Literal).to.equal(null);
+            chai_1.expect(third.Literal).to.equal(null);
+        });
     });
     mocha_1.describe("Literal test", () => {
         const lexer = new Lexer_1.Lexer("3.14159265359;");
@@ -98,9 +127,42 @@ mocha_1.describe("Lexer", () => {
             chai_1.expect(third.Literal).to.equal(null);
         });
     });
+    mocha_1.describe("Local/global variable test", () => {
+        (() => {
+            const lexer = new Lexer_1.Lexer("global var = 8;");
+            const tokens = lexer.LexTokens();
+            const first = tokens[0], second = tokens[1], third = tokens[2], fourth = tokens[3], fifth = tokens[4];
+            it("should produce 5 tokens", () => chai_1.expect(tokens.length - 1).to.equal(5));
+            it("should have global, identifier, equals, number, and semicolon tokens", () => {
+                chai_1.expect(first.Type).to.equal(SyntaxType_1.SyntaxType.GLOBAL);
+                chai_1.expect(second.Type).to.equal(SyntaxType_1.SyntaxType.IDENTIFIER);
+                chai_1.expect(third.Type).to.equal(SyntaxType_1.SyntaxType.EQUAL);
+                chai_1.expect(fourth.Type).to.equal(SyntaxType_1.SyntaxType.NUMBER);
+                chai_1.expect(fifth.Type).to.equal(SyntaxType_1.SyntaxType.SEMICOLON);
+            });
+            it("should produce proper lexemes", () => {
+                chai_1.expect(first.Lexeme).to.equal("global");
+                chai_1.expect(second.Lexeme).to.equal("var");
+                chai_1.expect(third.Lexeme).to.equal("=");
+                chai_1.expect(fourth.Lexeme).to.equal("8");
+                chai_1.expect(fifth.Lexeme).to.equal(";");
+            });
+            it("should produce proper literals", () => {
+                chai_1.expect(first.Literal).to.equal(null);
+                chai_1.expect(second.Literal).to.equal(null);
+                chai_1.expect(third.Literal).to.equal(null);
+                chai_1.expect(fourth.Literal).to.equal(8);
+                chai_1.expect(fifth.Literal).to.equal(null);
+            });
+        })();
+    });
     mocha_1.describe("Comment test", () => {
         const lexer = new Lexer_1.Lexer("## This is a comment.");
         const tokens = lexer.LexTokens();
         it("should produce 0 tokens", () => chai_1.expect(tokens.length - 1).to.equal(0));
+    });
+    mocha_1.describe("Error reporting test", () => {
+        const lexer = new Lexer_1.Lexer("$@\\");
+        it("should raise an unexpected character error", () => chai_1.expect(lexer.LexTokens).to.throw());
     });
 });

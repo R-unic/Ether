@@ -8,7 +8,9 @@ export namespace Expr {
     export interface Visitor<R> {
         VisitAssignExpr(expr: Assign): R;
         VisitCallExpr(expr: Call): R;
+        VisitCompoundAssignExpr(expr: CompoundAssign): R;
         VisitBinaryExpr(expr: Binary): R;
+        VisitGlobalVariableExpr(expr: Global): R;
         VisitGroupingExpr(expr: Grouping): R;
         VisitLiteralExpr(expr: Literal): R;
         VisitLogicalExpr(expr: Logical): R;
@@ -47,13 +49,40 @@ export namespace Expr {
     export class Assign extends Expression {
         public constructor(
             public readonly Name: Token,
-            public readonly Value: Expression
+            public readonly Value: Expression,
+            public readonly Global: boolean
         ) {
             super();
         }
 
         public Accept<R>(visitor: Visitor<R>): R {
             return visitor.VisitAssignExpr(this);
+        }
+    }
+
+    export class Global extends Expression {
+        public constructor(
+            public readonly Name: Token
+        ) {
+            super();
+        }
+
+        public Accept<R>(visitor: Visitor<R>): R {
+            return visitor.VisitGlobalVariableExpr(this);
+        }
+    }
+
+    export class CompoundAssign extends Expression {
+        public constructor(
+            public readonly Name: Token,
+            public readonly Operator: Token,
+            public readonly Value: Expr.Expression
+        ) {
+            super();
+        }
+
+        public Accept<R>(visitor: Visitor<R>): R {
+            return visitor.VisitCompoundAssignExpr(this);
         }
     }
 

@@ -1,0 +1,22 @@
+local r;
+local sum = 0;
+local temp;
+
+local response = input("Enter an integer: ");
+local n = number(response);
+if (!n)
+    print "Invalid number.";
+
+temp = n;
+
+while (n > 0) {
+    r = n % 10;
+    sum *= 10;
+    sum += r;
+    n /= 10;
+}
+
+if (temp == sum)
+    print "Palindrome";
+else
+    print "Not palindrome";

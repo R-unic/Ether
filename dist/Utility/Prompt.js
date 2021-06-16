@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -10,7 +9,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const process_1 = require("process");
-const Ether_1 = require("./Ether");
-process_1.argv.splice(0, 2);
-(() => __awaiter(void 0, void 0, void 0, function* () { return yield Ether_1.Ether.Main(process_1.argv); }))();
+exports.Input = exports.REPL = void 0;
+const readline_1 = require("readline");
+exports.REPL = readline_1.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+function Input(message) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise((resolve, reject) => exports.REPL.question(message, resolve));
+    });
+}
+exports.Input = Input;

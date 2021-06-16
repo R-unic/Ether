@@ -22,6 +22,14 @@
     color: #ecb266;
 }
 
+.c {
+    color: rgb(110, 125, 148);
+}
+
+.m {
+    color: rgb(144, 192, 255);
+}
+
 head, body {
     background-color: rgb(218, 218, 218);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -48,6 +56,6 @@ code {
     display: block;
     border-radius: 10px;
     margin: 5px;
-    padding: 4px;
-    width: 30%;
+    padding: 5px;
+    width: 63%;
 }

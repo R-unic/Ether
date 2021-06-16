@@ -1,14 +1,14 @@
 method makeCounter() {
-	let i = 0;
+	local i = 0;
 	method count() {
-		i = i + 1;
+		i += 1;
 		print i;
 	}
 
 	return count;
 }
 
-let counter = makeCounter();
+local counter = makeCounter();
 counter(); ##>> 1
 counter(); ##>> 2
 counter(); ##>> 3

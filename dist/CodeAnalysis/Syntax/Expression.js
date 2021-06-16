@@ -31,16 +31,39 @@ var Expr;
     }
     Expr.Logical = Logical;
     class Assign extends Expression {
-        constructor(Name, Value) {
+        constructor(Name, Value, Global) {
             super();
             this.Name = Name;
             this.Value = Value;
+            this.Global = Global;
         }
         Accept(visitor) {
             return visitor.VisitAssignExpr(this);
         }
     }
     Expr.Assign = Assign;
+    class Global extends Expression {
+        constructor(Name) {
+            super();
+            this.Name = Name;
+        }
+        Accept(visitor) {
+            return visitor.VisitGlobalVariableExpr(this);
+        }
+    }
+    Expr.Global = Global;
+    class CompoundAssign extends Expression {
+        constructor(Name, Operator, Value) {
+            super();
+            this.Name = Name;
+            this.Operator = Operator;
+            this.Value = Value;
+        }
+        Accept(visitor) {
+            return visitor.VisitCompoundAssignExpr(this);
+        }
+    }
+    Expr.CompoundAssign = CompoundAssign;
     class Variable extends Expression {
         constructor(Name) {
             super();

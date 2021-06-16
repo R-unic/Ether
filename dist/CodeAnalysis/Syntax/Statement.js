@@ -26,6 +26,17 @@ var Stmt;
         }
     }
     Stmt.Expression = Expression;
+    class Global extends Statement {
+        constructor(Name, Initializer) {
+            super();
+            this.Name = Name;
+            this.Initializer = Initializer;
+        }
+        Accept(visitor) {
+            return visitor.VisitGlobalVariableStmt(this);
+        }
+    }
+    Stmt.Global = Global;
     class If extends Statement {
         constructor(Condition, ThenBranch, ElseBranch) {
             super();
