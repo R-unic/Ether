@@ -60,7 +60,7 @@ var SyntaxType;
     SyntaxType[SyntaxType["SUPER"] = 50] = "SUPER";
     SyntaxType[SyntaxType["THIS"] = 51] = "THIS";
     SyntaxType[SyntaxType["TRUE"] = 52] = "TRUE";
-    SyntaxType[SyntaxType["LOCAL"] = 53] = "LOCAL";
+    SyntaxType[SyntaxType["LET"] = 53] = "LET";
     SyntaxType[SyntaxType["CONST"] = 54] = "CONST";
     SyntaxType[SyntaxType["WHILE"] = 55] = "WHILE";
     SyntaxType[SyntaxType["RAISE"] = 56] = "RAISE";

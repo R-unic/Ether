@@ -1,4 +1,5 @@
 import { cyan, green, magenta, red, yellow } from "colors/safe";
+import { argv } from "process";
 import { log } from "console";
 import { Ether } from "../../Ether";
 import { Expr } from "../Syntax/Expression";
@@ -17,11 +18,10 @@ import { WarnMethod } from "./Lib/Warn";
 import { Callable } from "./Callable";
 import { Method } from "./Method";
 import { Resolver } from "./Resolver";
-import { StringBuilder } from "../../Utility/StringBuilder";
 
 export class RuntimeError extends EvalError {
     public constructor(
-        public readonly Token?: Token, 
+        public readonly Token?: Token,
         message?: string
     ) {
         super(message);
@@ -51,7 +51,7 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
         this.Globals.Define("time", new TimeMethod);
         this.Globals.Define("wait", new WaitMethod);
         this.Globals.Define("warn", new WarnMethod);
-        this.Globals.Define("argv", [ "ether", ...Ether.Args ]);
+        this.Globals.Define("argv", [ ...argv, ...Ether.Args ]);
         this.Globals.Define("__version", `Ether 1.4.0`);
     }
 
@@ -64,7 +64,7 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
 
             const resolver = new Resolver(this);
             resolver.Resolve(statements);
-            
+
             if (Ether.HadError)
                 return;
 
@@ -195,7 +195,7 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
     public VisitCompoundAssignExpr(expr: Expr.CompoundAssign): unknown {
         const value: unknown = this.Evaluate(expr.Value);
         const variable: unknown = this.environment.Get(expr.Name);
-        
+
         switch (expr.Operator.Type) {
             case Syntax.PLUS_EQUAL: {
                 if (typeof value === "number" && typeof variable === "number") {
@@ -205,7 +205,7 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
                     this.environment.Assign(expr.Name, variable + value);
                     break;
                 }
-                    
+
                 throw new RuntimeError(expr.Operator, `Expected two strings or two numbers, got ${typeof value} and ${typeof variable}.`);
             }
             case Syntax.MINUS_EQUAL: {
@@ -213,7 +213,7 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
                     this.environment.Assign(expr.Name, variable - value);
                     break;
                 }
-                    
+
                 throw new RuntimeError(expr.Operator, `Expected two numbers, got ${typeof value} and ${typeof variable}.`);
             }
             case Syntax.STAR_EQUAL: {
@@ -221,7 +221,7 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
                     this.environment.Assign(expr.Name, variable * value);
                     break;
                 }
-                    
+
                 throw new RuntimeError(expr.Operator, `Expected two numbers, got ${typeof value} and ${typeof variable}.`);
             }
             case Syntax.SLASH_EQUAL: {
@@ -229,7 +229,7 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
                     this.environment.Assign(expr.Name, variable / value);
                     break;
                 }
-                    
+
                 throw new RuntimeError(expr.Operator, `Expected two numbers, got ${typeof value} and ${typeof variable}.`);
             }
             case Syntax.CARAT_EQUAL: {
@@ -237,7 +237,7 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
                     this.environment.Assign(expr.Name, variable ** value);
                     break;
                 }
-                    
+
                 throw new RuntimeError(expr.Operator, `Expected two numbers, got ${typeof value} and ${typeof variable}.`);
             }
             case Syntax.PERCENT_EQUAL: {
@@ -245,7 +245,7 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
                     this.environment.Assign(expr.Name, variable % value);
                     break;
                 }
-                    
+
                 throw new RuntimeError(expr.Operator, `Expected two numbers, got ${typeof value} and ${typeof variable}.`);
             }
         }
@@ -262,7 +262,7 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
         else
             if (!this.IsTruthy(left))
                 return left;
-        
+
         return this.Evaluate(expr.Right);
     }
 
@@ -313,7 +313,7 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
 
                 throw new RuntimeError(expr.Operator, "Operands must be two numbers or two strings.");
             }
-                
+
             case Syntax.MINUS:
                 this.CheckNumberOperands(expr.Operator, left, right);
                 return (left as number) - (right as number);
@@ -333,7 +333,7 @@ export class Interpreter implements Expr.Visitor<unknown>, Stmt.Visitor<void> {
 
         return void 0;
     }
-    
+
     public VisitGroupingExpr(expr: Expr.Grouping): unknown {
         return expr.Expression;
     }

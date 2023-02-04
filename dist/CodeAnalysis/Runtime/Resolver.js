@@ -37,9 +37,8 @@ class Resolver {
             this.interpreter.Resolve(expr, 0);
     }
     ResolveLocal(expr, name) {
-        var _a;
         for (let i = this.scopes.Size; i >= 0; i--)
-            if ((_a = this.scopes.Get(i)) === null || _a === void 0 ? void 0 : _a.has(name.Lexeme)) {
+            if (this.scopes.Get(i)?.has(name.Lexeme)) {
                 this.interpreter.Resolve(expr, this.scopes.Size - i);
                 return;
             }
@@ -54,15 +53,14 @@ class Resolver {
         if (this.scopes.Empty)
             return;
         const scope = this.scopes.Peek();
-        if (scope === null || scope === void 0 ? void 0 : scope.has(name.Lexeme))
+        if (scope?.has(name.Lexeme))
             Ether_1.Ether.Error(name, `Variable '${name.Lexeme}' is already declared in this scope.`);
-        scope === null || scope === void 0 ? void 0 : scope.set(name.Lexeme, false);
+        scope?.set(name.Lexeme, false);
     }
     Define(name) {
-        var _a;
         if (this.scopes.Empty)
             return;
-        (_a = this.scopes.Peek()) === null || _a === void 0 ? void 0 : _a.set(name.Lexeme, true);
+        this.scopes.Peek()?.set(name.Lexeme, true);
     }
     VisitBlockStmt(stmt) {
         this.BeginScope();
@@ -129,14 +127,12 @@ class Resolver {
         this.Resolve(expr.Right);
     }
     VisitGlobalVariableExpr(expr) {
-        var _a;
-        if (!this.scopes.Empty && ((_a = this.scopes.Peek()) === null || _a === void 0 ? void 0 : _a.get(expr.Name.Lexeme)) === false)
+        if (!this.scopes.Empty && this.scopes.Peek()?.get(expr.Name.Lexeme) === false)
             Ether_1.Ether.Error(expr.Name, "Cannot read global variable in it's own initializer");
         this.ResolveGlobal(expr, expr.Name);
     }
     VisitVariableExpr(expr) {
-        var _a;
-        if (!this.scopes.Empty && ((_a = this.scopes.Peek()) === null || _a === void 0 ? void 0 : _a.get(expr.Name.Lexeme)) === false)
+        if (!this.scopes.Empty && this.scopes.Peek()?.get(expr.Name.Lexeme) === false)
             Ether_1.Ether.Error(expr.Name, "Cannot read local variable in it's own initializer");
         this.ResolveLocal(expr, expr.Name);
     }

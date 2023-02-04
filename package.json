@@ -5,7 +5,7 @@
   "main": "dist/Main.js",
   "scripts": {
     "start": "npm test && node dist/Main.js",
-    "test": "tsc && npm i && mocha --exit",
+    "test": "tsc && mocha --exit",
     "pub": "np --no-2fa --no-cleanup"
   },
   "bin": "bin",
@@ -15,8 +15,8 @@
   },
   "mocha": {
     "file": [
-      "dist/Testing/LexerTest.js",
-      "dist/Testing/ParserTest.js"
+      "dist/Testing/Lexer.spec.js",
+      "dist/Testing/Parser.spec.js"
     ]
   },
   "keywords": [
@@ -27,14 +27,14 @@
   "author": "runicly",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/AlphaRunic/Ether/issues"
+    "url": "https://github.com/R-unic/Ether/issues"
   },
-  "homepage": "https://github.com/AlphaRunic/Ether#readme",
+  "homepage": "https://github.com/R-unic/Ether#readme",
   "dependencies": {
     "@types/prompt-sync": "^4.1.0",
-    "chai": "^4.3.4",
+    "chai": "^4.3.7",
     "colors": "^1.4.0",
-    "mocha": "^9.0.0",
+    "mocha": "^10.2.0",
     "prompt-sync": "^4.2.0",
     "readline": "^1.3.0",
     "tslib": "^2.3.0",

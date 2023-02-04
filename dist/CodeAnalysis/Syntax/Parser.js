@@ -12,7 +12,7 @@ class Parser {
     constructor(sourceCode) {
         this.current = 0;
         this.Lexer = new Lexer_1.Lexer(sourceCode);
-        this.tokens = this.Lexer.LexTokens();
+        this.tokens = this.Lexer.Tokenize();
     }
     Parse() {
         const statements = [];
@@ -29,7 +29,7 @@ class Parser {
                 return this.Method("method");
             if (this.Match(SyntaxType_1.SyntaxType.GLOBAL))
                 return this.GlobalVarDeclaration();
-            if (this.Match(SyntaxType_1.SyntaxType.LOCAL))
+            if (this.Match(SyntaxType_1.SyntaxType.LET))
                 return this.VarDeclaration();
             return this.Statement();
         }
@@ -90,9 +90,10 @@ class Parser {
         const parameters = [];
         if (!this.Check(SyntaxType_1.SyntaxType.RIGHT_PAREN))
             do {
-                if (parameters.length >= 255)
-                    this.Error(this.Peek(), "Methods can't have more than 255 parameters.");
-                parameters.push(this.Consume(SyntaxType_1.SyntaxType.IDENTIFIER, "Expected parameter name."));
+                if (parameters.length >= 50)
+                    this.Error(this.Peek(), "Methods cannot have more than 50 parameters.");
+                const param = this.Consume(SyntaxType_1.SyntaxType.IDENTIFIER, "Expected parameter name.");
+                parameters.push(param);
             } while (this.Match(SyntaxType_1.SyntaxType.COMMA));
         this.Consume(SyntaxType_1.SyntaxType.RIGHT_PAREN, "Expected ')' after method parameters.");
         this.Consume(SyntaxType_1.SyntaxType.LEFT_BRACE, `Expected '{' before ${kind} body.`);
@@ -104,7 +105,7 @@ class Parser {
         let initializer;
         if (this.Match(SyntaxType_1.SyntaxType.SEMICOLON))
             initializer = undefined;
-        else if (this.Match(SyntaxType_1.SyntaxType.LOCAL))
+        else if (this.Match(SyntaxType_1.SyntaxType.LET))
             initializer = this.VarDeclaration();
         else
             initializer = this.ExpressionStatement();
@@ -356,7 +357,7 @@ class Parser {
             switch (this.Peek().Type) {
                 case SyntaxType_1.SyntaxType.CLASS:
                 case SyntaxType_1.SyntaxType.METHOD:
-                case SyntaxType_1.SyntaxType.LOCAL:
+                case SyntaxType_1.SyntaxType.LET:
                 case SyntaxType_1.SyntaxType.GLOBAL:
                 case SyntaxType_1.SyntaxType.CONST:
                 case SyntaxType_1.SyntaxType.FOR:

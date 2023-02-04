@@ -15,7 +15,7 @@ export class Parser {
 
     public constructor(sourceCode: string) {
         this.Lexer = new Lexer(sourceCode);
-        this.tokens = this.Lexer.LexTokens();
+        this.tokens = this.Lexer.Tokenize();
     }
 
     public Parse(): Stmt.Statement[] {
@@ -38,7 +38,7 @@ export class Parser {
             if (this.Match(Syntax.GLOBAL))
                 return this.GlobalVarDeclaration();
 
-            if (this.Match(Syntax.LOCAL))
+            if (this.Match(Syntax.LET))
                 return this.VarDeclaration();
 
             return this.Statement();
@@ -118,12 +118,11 @@ export class Parser {
         const parameters: Token[] = [];
         if (!this.Check(Syntax.RIGHT_PAREN))
             do {
-                if (parameters.length >= 255)
-                    this.Error(this.Peek(), "Methods can't have more than 255 parameters.");
+                if (parameters.length >= 50)
+                    this.Error(this.Peek(), "Methods cannot have more than 50 parameters.");
 
-                parameters.push(
-                    this.Consume(Syntax.IDENTIFIER, "Expected parameter name.")
-                );
+                const param = this.Consume(Syntax.IDENTIFIER, "Expected parameter name.");
+                parameters.push(param);
             } while (this.Match(Syntax.COMMA));
 
         this.Consume(Syntax.RIGHT_PAREN, "Expected ')' after method parameters.");
@@ -139,7 +138,7 @@ export class Parser {
         let initializer: Stmt.Statement | undefined;
         if (this.Match(Syntax.SEMICOLON))
             initializer = undefined;
-        else if (this.Match(Syntax.LOCAL))
+        else if (this.Match(Syntax.LET))
             initializer = this.VarDeclaration();
         else
             initializer = this.ExpressionStatement();
@@ -165,7 +164,7 @@ export class Parser {
         body = new Stmt.While(condition, body);
         if (initializer !== undefined)
             body = new Stmt.Block([ initializer, body ]);
-            
+
         return body;
     }
 
@@ -232,7 +231,7 @@ export class Parser {
 
         return expr;
     }
- 
+
     private Or(): Expr.Expression {
         let expr: Expr.Expression = this.And();
 
@@ -409,7 +408,7 @@ export class Parser {
             this.Consume(Syntax.RIGHT_PAREN, "Expected ')' after expression.");
             return new Expr.Grouping(expr);
         }
-        
+
         throw this.Error(this.Peek(), "Expected expression.");
     }
 
@@ -469,7 +468,7 @@ export class Parser {
             switch (this.Peek().Type) {
                 case Syntax.CLASS:
                 case Syntax.METHOD:
-                case Syntax.LOCAL:
+                case Syntax.LET:
                 case Syntax.GLOBAL:
                 case Syntax.CONST:
                 case Syntax.FOR:

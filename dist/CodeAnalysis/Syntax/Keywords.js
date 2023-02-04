@@ -11,7 +11,7 @@ exports.Keywords = new Map(Object.entries({
     "for": SyntaxType_1.SyntaxType.FOR,
     "global": SyntaxType_1.SyntaxType.GLOBAL,
     "if": SyntaxType_1.SyntaxType.IF,
-    "local": SyntaxType_1.SyntaxType.LOCAL,
+    "let": SyntaxType_1.SyntaxType.LET,
     "method": SyntaxType_1.SyntaxType.METHOD,
     "null": SyntaxType_1.SyntaxType.NULL,
     "print": SyntaxType_1.SyntaxType.PRINT,

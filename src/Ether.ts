@@ -12,19 +12,19 @@ export class Ether {
     public static HadError = false;
     public static HadRuntimeError = false;
     public static Args: string[] = [];
-    
+
     private static readonly interpreter = new Interpreter;
 
     public static async Main(args: string[]): Promise<void> {
         this.Args = args;
-        if (args.length = 1)
+        if (args.length == 1)
             this.RunFile(args[0]);
         else {
             log("Welcome to the " + rainbow("Ether") + " REPL!");
             await this.RunPrompt();
         }
     }
-    
+
     public static RaiseError(tokenOrLine: Token | number, message: string): void {
         error(red(`[line ${typeof tokenOrLine === "number" ? tokenOrLine : tokenOrLine.Line}] Raised Error: ${message}`));
         this.HadError = true;
@@ -46,7 +46,7 @@ export class Ether {
     }
 
     public static Report(line: number, where: string, message: string): void {
-        error(red(`[line ${line}] Error${where}: ${message}`));
+        error(red(`[line ${line + 1}] Error${where}: ${message}`));
         this.HadError = true;
     }
 

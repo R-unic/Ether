@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { argv } from "process";
 import { Ether } from "./Ether";
 

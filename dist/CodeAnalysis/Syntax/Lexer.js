@@ -16,7 +16,7 @@ class Lexer {
     get Completed() {
         return this.current >= this.source.length;
     }
-    LexTokens() {
+    Tokenize() {
         while (!this.Completed) {
             this.start = this.current;
             this.Lex();
@@ -173,11 +173,10 @@ class Lexer {
         return c === " " ? false : this.IsAlpha(c) || this.IsDigit(c);
     }
     Identifier() {
-        var _a;
         while (this.IsAlphaNumeric(this.Peek()))
             this.Advance();
         const text = this.source.substring(this.start, this.current).trim();
-        let type = (_a = Keywords_1.Keywords.get(text)) !== null && _a !== void 0 ? _a : SyntaxType_1.SyntaxType.IDENTIFIER;
+        let type = Keywords_1.Keywords.get(text) ?? SyntaxType_1.SyntaxType.IDENTIFIER;
         this.AddToken(type);
     }
     String(delimiter) {

@@ -9,7 +9,7 @@ export const Keywords = new Map<string, Syntax>(Object.entries({
     "for": Syntax.FOR,
     "global": Syntax.GLOBAL,
     "if": Syntax.IF,
-    "local": Syntax.LOCAL,
+    "let": Syntax.LET,
     "method": Syntax.METHOD,
     "null": Syntax.NULL,
     "print": Syntax.PRINT,

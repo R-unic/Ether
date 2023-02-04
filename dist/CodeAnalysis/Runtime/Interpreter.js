@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Interpreter = exports.Return = exports.RuntimeError = void 0;
 const safe_1 = require("colors/safe");
+const process_1 = require("process");
 const console_1 = require("console");
 const Ether_1 = require("../../Ether");
 const Statement_1 = require("../Syntax/Statement");
@@ -42,7 +43,7 @@ class Interpreter {
         this.Globals.Define("time", new Time_1.TimeMethod);
         this.Globals.Define("wait", new Wait_1.WaitMethod);
         this.Globals.Define("warn", new Warn_1.WarnMethod);
-        this.Globals.Define("argv", ["ether", ...Ether_1.Ether.Args]);
+        this.Globals.Define("argv", [...process_1.argv, ...Ether_1.Ether.Args]);
         this.Globals.Define("__version", `Ether 1.4.0`);
     }
     Interpret(parser, repl) {
@@ -58,7 +59,7 @@ class Interpreter {
             for (const statement of statements)
                 if (statement instanceof Statement_1.Stmt.Expression && repl === true) {
                     const value = this.Evaluate(statement.Expression);
-                    console_1.log(this.GetStyling(value));
+                    (0, console_1.log)(this.GetStyling(value));
                 }
                 else
                     this.Execute(statement);
@@ -129,7 +130,7 @@ class Interpreter {
     }
     VisitPrintStmt(stmt) {
         const value = this.Evaluate(stmt.Expression);
-        console_1.log(this.GetStyling(value) !== undefined ? this.GetStyling(value) : this.Stringify(value));
+        (0, console_1.log)(this.GetStyling(value) !== undefined ? this.GetStyling(value) : this.Stringify(value));
     }
     VisitGlobalVariableStmt(stmt) {
         let value;
@@ -193,7 +194,7 @@ class Interpreter {
             }
             case SyntaxType_1.SyntaxType.CARAT_EQUAL: {
                 if (typeof value === "number" && typeof variable === "number") {
-                    this.environment.Assign(expr.Name, Math.pow(variable, value));
+                    this.environment.Assign(expr.Name, variable ** value);
                     break;
                 }
                 throw new RuntimeError(expr.Operator, `Expected two numbers, got ${typeof value} and ${typeof variable}.`);
@@ -267,7 +268,7 @@ class Interpreter {
                 return left * right;
             case SyntaxType_1.SyntaxType.CARAT:
                 this.CheckNumberOperands(expr.Operator, left, right);
-                return Math.pow(left, right);
+                return left ** right;
             case SyntaxType_1.SyntaxType.PERCENT:
                 this.CheckNumberOperands(expr.Operator, left, right);
                 return left % right;
@@ -297,16 +298,16 @@ class Interpreter {
     GetStyling(value) {
         const strValue = this.Stringify(value);
         if (strValue === "null")
-            return safe_1.cyan(strValue);
+            return (0, safe_1.cyan)(strValue);
         if (value instanceof Error)
-            return safe_1.red(strValue);
+            return (0, safe_1.red)(strValue);
         switch (typeof value) {
             case "boolean":
-                return safe_1.yellow(strValue);
+                return (0, safe_1.yellow)(strValue);
             case "number":
-                return safe_1.magenta(strValue);
+                return (0, safe_1.magenta)(strValue);
             case "string":
-                return safe_1.green(`"${strValue}"`);
+                return (0, safe_1.green)(`"${strValue}"`);
         }
         return strValue;
     }

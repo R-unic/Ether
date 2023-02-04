@@ -8,7 +8,7 @@ class WarnMethod {
         return 1;
     }
     Call(interpreter, [message]) {
-        console_1.log(safe_1.yellow("Warning: "), interpreter.GetStyling(message));
+        (0, console_1.log)((0, safe_1.yellow)("Warning: "), interpreter.GetStyling(message));
     }
     ToString() {
         return "<native method>";

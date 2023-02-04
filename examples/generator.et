@@ -1,5 +1,5 @@
 method makeCounter() {
-	local i = 0;
+	let i = 0;
 	method count() {
 		i += 1;
 		print i;
@@ -8,7 +8,7 @@ method makeCounter() {
 	return count;
 }
 
-local counter = makeCounter();
+let counter = makeCounter();
 counter(); ##>> 1
 counter(); ##>> 2
 counter(); ##>> 3

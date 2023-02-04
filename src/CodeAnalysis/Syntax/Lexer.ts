@@ -17,7 +17,7 @@ export class Lexer {
         return this.current >= this.source.length;
     }
 
-    public LexTokens(): Token[] {
+    public Tokenize(): Token[] {
         while (!this.Completed) {
             this.start = this.current;
             this.Lex();
@@ -43,31 +43,31 @@ export class Lexer {
                     type = Syntax.MINUS_EQUAL;
                 if (this.Match('-'))
                     type = Syntax.MINUS_MINUS;
-                this.AddToken(type);  
+                this.AddToken(type);
                 break;
-            } 
+            }
             case "+": {
                 let type = Syntax.PLUS;
                 if (this.Match('='))
                     type = Syntax.PLUS_EQUAL;
                 if (this.Match('+'))
                     type = Syntax.PLUS_PLUS;
-                this.AddToken(type);  
+                this.AddToken(type);
                 break;
             }
-            case "*": 
-                this.AddToken(this.Match('=') ? Syntax.STAR_EQUAL : Syntax.STAR);  
+            case "*":
+                this.AddToken(this.Match('=') ? Syntax.STAR_EQUAL : Syntax.STAR);
                 break;
-            case '/': 
-                this.AddToken(this.Match('=') ? Syntax.SLASH_EQUAL : Syntax.SLASH);  
+            case '/':
+                this.AddToken(this.Match('=') ? Syntax.SLASH_EQUAL : Syntax.SLASH);
                 break;
-            case "^": 
-                this.AddToken(this.Match('=') ? Syntax.CARAT_EQUAL : Syntax.CARAT);  
+            case "^":
+                this.AddToken(this.Match('=') ? Syntax.CARAT_EQUAL : Syntax.CARAT);
                 break;
-            case "%": 
-                this.AddToken(this.Match('=') ? Syntax.PERCENT_EQUAL : Syntax.PERCENT);  
+            case "%":
+                this.AddToken(this.Match('=') ? Syntax.PERCENT_EQUAL : Syntax.PERCENT);
                 break;
-            case "#": 
+            case "#":
                 if (this.Match("#"))
                     if (this.Match(":"))
                         do this.SkipMultilineComment();
@@ -90,15 +90,15 @@ export class Lexer {
                 this.AddToken(this.Match('=') ? Syntax.GREATER_EQUAL : Syntax.GREATER);
                 break;
 
-            case ":": 
-                this.AddToken(this.Match(':') ? Syntax.COLON_COLON : Syntax.COLON);  
+            case ":":
+                this.AddToken(this.Match(':') ? Syntax.COLON_COLON : Syntax.COLON);
                 break;
 
             case ' ':
             case '\r':
             case '\t':
                 break;
-        
+
             case '\n':
                 this.line++;
                 break;
@@ -109,10 +109,10 @@ export class Lexer {
                 break;
 
             case "|":
-                this.AddToken(this.Match('=') ? Syntax.OR_EQUAL : Syntax.OR); 
+                this.AddToken(this.Match('=') ? Syntax.OR_EQUAL : Syntax.OR);
                 break;
             case "&":
-                this.AddToken(this.Match('=') ? Syntax.AND_EQUAL : Syntax.AND); 
+                this.AddToken(this.Match('=') ? Syntax.AND_EQUAL : Syntax.AND);
                 break;
 
             default:
@@ -170,7 +170,7 @@ export class Lexer {
         return (c >= 'a' && c <= 'z') ||
             (c >= 'A' && c <= 'Z') ||
             c == '_';
-    }  
+    }
 
     private IsDigit(c: string): boolean {
         return !isNaN(Number(c))
@@ -189,7 +189,7 @@ export class Lexer {
         this.AddToken(type);
     }
 
-    private String(delimiter: string): void {        
+    private String(delimiter: string): void {
         while (this.Peek() !== delimiter && !this.Completed) {
             if (this.Peek() === "\n")
                 this.line++;
@@ -204,7 +204,7 @@ export class Lexer {
 
         this.Advance();
 
-        const value = this.source.substring(this.start + 1, this.current - 1);        
+        const value = this.source.substring(this.start + 1, this.current - 1);
         this.AddToken(Syntax.STRING, value);
     }
 
@@ -217,7 +217,7 @@ export class Lexer {
             while (this.IsDigit(this.Peek()))
                 this.Advance();
         }
-            
+
         this.AddToken(Syntax.NUMBER, Number(this.source.substring(this.start, this.current)));
     }
 }

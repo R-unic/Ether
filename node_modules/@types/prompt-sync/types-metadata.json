@@ -1,0 +1,25 @@
+{
+    "authors": "TANAKA Koichi <https://github.com/MugeSo>",
+    "definitionFilename": "index.d.ts",
+    "libraryDependencies": [],
+    "moduleDependencies": [],
+    "libraryMajorVersion": 4,
+    "libraryMinorVersion": 1,
+    "libraryName": "prompt-sync 4.1.4",
+    "typingsPackageName": "prompt-sync",
+    "projectName": "https://github.com/0x00A/prompt-sync",
+    "sourceRepoURL": "https://www.github.com/DefinitelyTyped/DefinitelyTyped",
+    "sourceBranch": "types-2.0",
+    "kind": "ProperModule",
+    "globals": [
+        "PromptSync"
+    ],
+    "declaredModules": [
+        "prompt-sync"
+    ],
+    "files": [
+        "index.d.ts"
+    ],
+    "hasPackageJson": false,
+    "contentHash": "2cfc7109757f8d4820c567b93d179e052a78c6ff1af64f7364ef98ed2be55c9b"
+}
